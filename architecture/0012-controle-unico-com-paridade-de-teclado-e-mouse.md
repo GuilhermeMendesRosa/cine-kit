@@ -3,7 +3,7 @@
 - **Status:** Aceito
 - **Data:** 2026-10-22
 - **Substitui:** no [0003](0003-controle-remoto-web-via-wifi.md), a tabela de teclas por tela, o botão Home e o "fora: touchpad/mouse"; no [0004](0004-apps-android-via-emulador.md), o "fora: mouse/touch dentro do app"; no [0008](0008-navegacao-por-setas-nos-servicos-web.md), o "Esc volta para a home"; no [0011](0011-app-web-do-controle-em-react.md), o layout de botões
-- **Substituído por:** —
+- **Substituído por:** [0015](0015-controle-absoluto-analogico-e-som.md) (trechos)
 
 ## Contexto
 
