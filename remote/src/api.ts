@@ -5,6 +5,8 @@ export type Button =
 /** A touchpad event; scroll deltas are the finger's, which the content follows (ADR 0012). */
 export type PointerEvent = { type: 'move' | 'scroll'; dx: number; dy: number } | { type: 'click' }
 
+export type Theme = 'light' | 'dark'
+
 export type PressResult = 'ok' | 'unauthorized' | 'offline'
 
 type Options = { token: string; fetch?: typeof globalThis.fetch }
@@ -26,16 +28,24 @@ export function typeText(text: string, options: Options): Promise<PressResult> {
   return post('/api/text', { text }, options)
 }
 
-/** Reads the Mac's state for the remote: whether the open app wants the click sound (ADR 0015). */
+/** Sets the theme of the Mac and the remote (ADR 0019). */
+export function setTheme(theme: Theme, options: Options): Promise<PressResult> {
+  return post('/api/theme', { theme }, options)
+}
+
+/** Reads the Mac's state for the remote: whether the open app wants the click sound (ADR 0015) and the theme (ADR 0019). */
 export async function fetchState(
   { token, fetch = globalThis.fetch }: Options,
-): Promise<{ clickSound: boolean } | 'unauthorized' | 'offline'> {
+): Promise<{ clickSound: boolean; theme: Theme } | 'unauthorized' | 'offline'> {
   try {
     const response = await fetch('/api/state', {
       headers: { Authorization: `Bearer ${token}` },
       signal: AbortSignal.timeout(timeoutMs),
     })
-    if (response.ok) return { clickSound: (await response.json()).clickSound === true }
+    if (response.ok) {
+      const json = await response.json()
+      return { clickSound: json.clickSound === true, theme: json.theme === 'light' ? 'light' : 'dark' }
+    }
     return response.status === 401 ? 'unauthorized' : 'offline'
   } catch {
     return 'offline'

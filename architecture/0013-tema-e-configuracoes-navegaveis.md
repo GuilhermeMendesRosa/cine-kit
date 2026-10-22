@@ -3,7 +3,7 @@
 - **Status:** Aceito
 - **Data:** 2026-10-22
 - **Substitui:** no [0007](0007-camada-de-foco-da-home.md), o limite da camada de foco à home (estende às Configurações); no [0011](0011-app-web-do-controle-em-react.md), o "visual escuro"
-- **Substituído por:** [0015](0015-controle-absoluto-analogico-e-som.md) (trechos)
+- **Substituído por:** [0015](0015-controle-absoluto-analogico-e-som.md) (trechos), [0019](0019-tema-escolhido-e-pareado-com-o-controle.md) (trechos)
 
 ## Contexto
 

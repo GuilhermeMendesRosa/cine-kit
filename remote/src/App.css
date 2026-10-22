@@ -1,6 +1,6 @@
-/* Liquid Glass look in CSS (ADR 0013): follows the phone's light/dark setting. */
+/* Liquid Glass look in CSS (ADR 0013): follows the theme picked on the Mac, through data-theme (ADR 0019). */
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
   font-family: -apple-system, system-ui, sans-serif;
   --text: #1d1d1f;
   --secondary: rgb(60 60 67 / 0.6);
@@ -16,21 +16,20 @@
   --glass-shadow: 0 10px 30px rgb(0 0 0 / 0.08);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #f5f5f7;
-    --secondary: rgb(235 235 245 / 0.6);
-    --warning: #ff9f0a;
-    --backdrop: radial-gradient(circle at 15% 10%, rgb(255 255 255 / 0.06), transparent 45%),
-      radial-gradient(circle at 90% 55%, rgb(255 255 255 / 0.04), transparent 50%),
-      linear-gradient(170deg, #121212, #050505);
-    --glass-fill: rgb(255 255 255 / 0.08);
-    --glass-pressed: rgb(255 255 255 / 0.22);
-    --glass-solid: #2c2c2e;
-    --glass-highlight: rgb(255 255 255 / 0.22);
-    --glass-edge: rgb(255 255 255 / 0.08);
-    --glass-shadow: 0 10px 30px rgb(0 0 0 / 0.45);
-  }
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --text: #f5f5f7;
+  --secondary: rgb(235 235 245 / 0.6);
+  --warning: #ff9f0a;
+  --backdrop: radial-gradient(circle at 15% 10%, rgb(255 255 255 / 0.06), transparent 45%),
+    radial-gradient(circle at 90% 55%, rgb(255 255 255 / 0.04), transparent 50%),
+    linear-gradient(170deg, #121212, #050505);
+  --glass-fill: rgb(255 255 255 / 0.08);
+  --glass-pressed: rgb(255 255 255 / 0.22);
+  --glass-solid: #2c2c2e;
+  --glass-highlight: rgb(255 255 255 / 0.22);
+  --glass-edge: rgb(255 255 255 / 0.08);
+  --glass-shadow: 0 10px 30px rgb(0 0 0 / 0.45);
 }
 
 * {
@@ -178,13 +177,15 @@ main {
 }
 
 .actions > .key,
-.key-home {
+.key-home,
+.key-theme {
   background: var(--glass-fill);
   box-shadow: inset 0 1px 0 var(--glass-highlight), inset 0 0 0 1px var(--glass-edge), var(--glass-shadow);
 }
 
 .actions > .key:active,
-.key-home:active {
+.key-home:active,
+.key-theme:active {
   background: var(--glass-pressed);
 }
 
@@ -234,7 +235,8 @@ main {
   .glass,
   .dpad .key-ok,
   .actions > .key,
-  .key-home {
+  .key-home,
+  .key-theme {
     background: var(--glass-solid);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;

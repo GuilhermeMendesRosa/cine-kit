@@ -35,7 +35,7 @@ Convenções do projeto, inspiradas no tvOS 26. Não são API — ajuste aqui se
 - **Texto grande.** Use estilos de texto (`.title`, `.largeTitle`, `.headline`) em vez de tamanhos fixos pequenos; nada de `.caption`/`.footnote` para informação que precisa ser lida do sofá.
 - **Margens de segurança.** Mantenha conteúdo e controles longe das bordas (referência: margens laterais e verticais generosas, como no tvOS). Fundo e imagens hero podem ir até a borda.
 - **Alvos grandes e espaçados.** Cards e botões com área e espaçamento amplos; nada de controles densos de app de Mac.
-- **Menus seguem o tema; mídia escura.** Home e Configurações seguem o tema escolhido (Automático/Claro/Escuro, ADR 0013); telas de mídia/player ficam escuras, com imagens de conteúdo dando a cor.
+- **Menus seguem o tema; mídia escura.** Home e Configurações seguem o tema escolhido (Claro/Escuro, ADR 0019); telas de mídia/player ficam escuras, com imagens de conteúdo dando a cor.
 
 ## Foco no estilo tvOS
 

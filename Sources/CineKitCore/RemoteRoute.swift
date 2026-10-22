@@ -10,10 +10,12 @@ public struct RemoteResponse: Equatable, Sendable {
     public let pointer: RemotePointerEvent?
     /// The text to type, for an accepted text request (ADR 0016).
     public let text: String?
+    /// The theme to save, for an accepted theme request (ADR 0019).
+    public let theme: AppTheme?
 
     init(
         status: Int, headers: [String: String] = [:], body: Data = Data(),
-        button: RemoteButton? = nil, pointer: RemotePointerEvent? = nil, text: String? = nil
+        button: RemoteButton? = nil, pointer: RemotePointerEvent? = nil, text: String? = nil, theme: AppTheme? = nil
     ) {
         self.status = status
         self.headers = headers
@@ -21,6 +23,7 @@ public struct RemoteResponse: Equatable, Sendable {
         self.button = button
         self.pointer = pointer
         self.text = text
+        self.theme = theme
     }
 
     /// The bytes to send back, keeping the connection open.
@@ -34,7 +37,7 @@ public struct RemoteResponse: Equatable, Sendable {
     }
 }
 
-/// Routes a request of the web remote: the API and the app's static files (ADR 0003, protocol v1, and ADRs 0012 and 0016).
+/// Routes a request of the web remote: the API and the app's static files (ADR 0003, protocol v1, and ADRs 0012, 0016 and 0019).
 public enum RemoteRoute {
     private static let contentTypes = [
         "html": "text/html; charset=utf-8",
@@ -53,13 +56,22 @@ public enum RemoteRoute {
         let text: String
     }
 
+    private struct ThemeBody: Decodable {
+        let theme: String
+    }
+
+    private struct State: Encodable {
+        let clickSound: Bool
+        let theme: String
+    }
+
     /// Longer texts are rejected: typing on the phone sends a few characters at a time.
     static let maxTextLength = 256
 
-    /// `clickSound` is the remote's click sound for the open app (ADR 0015). `staticFile` reads a file of the web app
-    /// by its path relative to the app's folder.
+    /// `clickSound` is the remote's click sound for the open app (ADR 0015). `theme` is the app's theme, shared with the
+    /// remote (ADR 0019). `staticFile` reads a file of the web app by its path relative to the app's folder.
     public static func response(
-        for request: RemoteHTTPRequest, token: String, clickSound: Bool, staticFile: (String) -> Data?
+        for request: RemoteHTTPRequest, token: String, clickSound: Bool, theme: AppTheme, staticFile: (String) -> Data?
     ) -> RemoteResponse {
         if request.path == "/api/press", request.method == "POST" {
             return press(request, token: token)
@@ -70,9 +82,14 @@ public enum RemoteRoute {
         if request.path == "/api/text", request.method == "POST" {
             return text(request, token: token)
         }
+        if request.path == "/api/theme", request.method == "POST" {
+            return self.theme(request, token: token)
+        }
         if request.path == "/api/state", request.method == "GET" {
             guard authorized(request, token: token) else { return RemoteResponse(status: 401) }
-            let body = (try? JSONEncoder().encode(["clickSound": clickSound])) ?? Data()
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = .sortedKeys
+            let body = (try? encoder.encode(State(clickSound: clickSound, theme: theme.rawValue))) ?? Data()
             return RemoteResponse(status: 200, headers: ["Content-Type": "application/json"], body: body)
         }
         guard request.method == "GET", !request.path.hasPrefix("/api/") else { return RemoteResponse(status: 404) }
@@ -103,6 +120,13 @@ public enum RemoteRoute {
             return RemoteResponse(status: 400)
         }
         return RemoteResponse(status: 204, text: text)
+    }
+
+    private static func theme(_ request: RemoteHTTPRequest, token: String) -> RemoteResponse {
+        guard authorized(request, token: token) else { return RemoteResponse(status: 401) }
+        guard let body = try? JSONDecoder().decode(ThemeBody.self, from: request.body),
+              let theme = AppTheme(rawValue: body.theme) else { return RemoteResponse(status: 400) }
+        return RemoteResponse(status: 204, theme: theme)
     }
 
     private static func authorized(_ request: RemoteHTTPRequest, token: String) -> Bool {

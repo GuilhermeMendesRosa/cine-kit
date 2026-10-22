@@ -43,3 +43,4 @@ O objetivo é que qualquer pessoa — ou agente de IA — entenda **por que** o 
 | [0016](0016-teclado-de-texto-no-controle.md) | Teclado de texto no controle | Proposto | 2026-10-22 |
 | [0017](0017-distribuicao-por-dmg-no-github-releases.md) | Distribuição por .dmg no GitHub Releases | Proposto | 2026-10-22 |
 | [0018](0018-sdk-android-instalado-pelo-app.md) | SDK Android instalado pelo próprio app | Proposto | 2026-10-22 |
+| [0019](0019-tema-escolhido-e-pareado-com-o-controle.md) | Tema escolhido no app e pareado com o controle | Proposto | 2026-10-22 |

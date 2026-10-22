@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { fetchState, pointer, press, typeText, type Button, type PressResult } from './api'
+import { fetchState, pointer, press, setTheme, typeText, type Button, type PressResult } from './api'
 import { createClickSound } from './clickSound'
 import { haptic } from './haptics'
 import { startHold } from './holdRepeat'
 import { clearToken, resolveToken } from './pairing'
 import { createPointerQueue } from './pointerQueue'
 import { createTextQueue, type TextQueue } from './textQueue'
+import { applyTheme, loadTheme, saveTheme } from './theme'
 import { Touchpad } from './Touchpad'
 import './App.css'
 
@@ -23,6 +24,13 @@ export default function App() {
   const [token, setToken] = useState(() => resolveToken(new URL(location.href), localStorage))
   const [expired, setExpired] = useState(false)
   const [offline, setOffline] = useState(false)
+  const [theme, setThemeState] = useState(() => loadTheme(localStorage))
+
+  // The Mac's theme, also on the pairing screen (ADR 0019).
+  useEffect(() => {
+    applyTheme(theme)
+    saveTheme(theme, localStorage)
+  }, [theme])
 
   function handleResult(result: PressResult) {
     if (result === 'unauthorized') {
@@ -38,14 +46,25 @@ export default function App() {
     handleResult(await press(button, { token }))
   }
 
-  // The open app may turn the click sound off (ADR 0015); offline keeps the last value.
+  // Optimistic: the phone switches at once; offline, the next /api/state brings back the Mac's theme.
+  async function toggleTheme() {
+    if (!token) return
+    const next = theme === 'dark' ? 'light' : 'dark'
+    setThemeState(next)
+    handleResult(await setTheme(next, { token }))
+  }
+
+  // The open app may turn the click sound off (ADR 0015) and the Mac sets the theme (ADR 0019); offline keeps the last values.
   useEffect(() => {
     if (!token) return
     async function refresh() {
       if (document.visibilityState !== 'visible') return
       const state = await fetchState({ token: token! })
       if (state === 'unauthorized') handleResult(state)
-      else if (state !== 'offline') clickSound.enabled = state.clickSound
+      else if (state !== 'offline') {
+        clickSound.enabled = state.clickSound
+        setThemeState(state.theme)
+      }
     }
     void refresh()
     const interval = setInterval(refresh, stateIntervalMs)
@@ -83,6 +102,17 @@ export default function App() {
             <Key button="volumeDown" label="Diminuir volume" onPress={send}><VolumeIcon sign="−" /></Key>
             <Key button="volumeUp" label="Aumentar volume" onPress={send}><VolumeIcon sign="+" /></Key>
           </div>
+          <button
+            type="button"
+            className="key key-theme"
+            aria-label="Alternar tema"
+            onClick={() => {
+              feedback()
+              void toggleTheme()
+            }}
+          >
+            <ThemeIcon />
+          </button>
           <Key button="home" label="Início" onPress={send}><HomeIcon /></Key>
         </div>
         <div className="actions">
@@ -243,6 +273,11 @@ function BackIcon() {
 
 function HomeIcon() {
   return <Icon><path d="M3 11 12 3.5 21 11" /><path d="M5.5 9v11h13V9" /></Icon>
+}
+
+/** After `circle.lefthalf.filled`: a fixed icon, so it reads as "switch" and not as the current or the next theme. */
+function ThemeIcon() {
+  return <Icon><circle cx="12" cy="12" r="9" /><path d="M12 3a9 9 0 0 0 0 18Z" fill="currentColor" /></Icon>
 }
 
 function KeyboardIcon() {

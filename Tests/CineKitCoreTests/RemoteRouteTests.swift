@@ -8,9 +8,9 @@ struct RemoteRouteTests {
         "assets/app.js": Data("js".utf8),
     ]
 
-    private func respond(_ raw: String, clickSound: Bool = true) throws -> RemoteResponse {
+    private func respond(_ raw: String, clickSound: Bool = true, theme: AppTheme = .dark) throws -> RemoteResponse {
         let request = try #require(RemoteHTTPRequest.parse(Data(raw.utf8)))
-        return RemoteRoute.response(for: request, token: "secret", clickSound: clickSound) { files[$0] }
+        return RemoteRoute.response(for: request, token: "secret", clickSound: clickSound, theme: theme) { files[$0] }
     }
 
     private func press(_ body: String, authorization: String? = "Bearer secret") throws -> RemoteResponse {
@@ -26,6 +26,11 @@ struct RemoteRouteTests {
     private func text(_ body: String, authorization: String? = "Bearer secret") throws -> RemoteResponse {
         let header = authorization.map { "Authorization: \($0)\r\n" } ?? ""
         return try respond("POST /api/text HTTP/1.1\r\n\(header)Content-Length: \(body.utf8.count)\r\n\r\n\(body)")
+    }
+
+    private func themeRequest(_ body: String, authorization: String? = "Bearer secret") throws -> RemoteResponse {
+        let header = authorization.map { "Authorization: \($0)\r\n" } ?? ""
+        return try respond("POST /api/theme HTTP/1.1\r\n\(header)Content-Length: \(body.utf8.count)\r\n\r\n\(body)")
     }
 
     @Test func rootServesIndex() throws {
@@ -70,7 +75,7 @@ struct RemoteRouteTests {
     @Test func rejectsPathTraversal() throws {
         let request = try #require(RemoteHTTPRequest.parse(Data("GET /../secret.txt HTTP/1.1\r\n\r\n".utf8)))
         var asked = false
-        let response = RemoteRoute.response(for: request, token: "secret", clickSound: true) { _ in
+        let response = RemoteRoute.response(for: request, token: "secret", clickSound: true, theme: .dark) { _ in
             asked = true
             return Data()
         }
@@ -89,7 +94,30 @@ struct RemoteRouteTests {
         let response = try respond("GET /api/state HTTP/1.1\r\nAuthorization: Bearer secret\r\n\r\n", clickSound: false)
         #expect(response.status == 200)
         #expect(response.headers["Content-Type"] == "application/json")
-        #expect(response.body == Data(#"{"clickSound":false}"#.utf8))
+        #expect(response.body == Data(#"{"clickSound":false,"theme":"dark"}"#.utf8))
+    }
+
+    @Test func stateReturnsTheme() throws {
+        let response = try respond("GET /api/state HTTP/1.1\r\nAuthorization: Bearer secret\r\n\r\n", theme: .light)
+        #expect(String(decoding: response.body, as: UTF8.self).contains(#""theme":"light""#))
+    }
+
+    @Test func themeReturns204WithTheTheme() throws {
+        let response = try themeRequest(#"{"theme":"light"}"#)
+        #expect(response.status == 204)
+        #expect(response.theme == .light)
+    }
+
+    @Test func themeWithUnknownValueIs400() throws {
+        let response = try themeRequest(#"{"theme":"system"}"#)
+        #expect(response.status == 400)
+        #expect(response.theme == nil)
+        #expect(try themeRequest("dark").status == 400)
+    }
+
+    @Test func themeWithoutTokenIs401() throws {
+        #expect(try themeRequest(#"{"theme":"dark"}"#, authorization: nil).status == 401)
+        #expect(try themeRequest(#"{"theme":"dark"}"#, authorization: "Bearer wrong").status == 401)
     }
 
     @Test func stateWithoutTokenIs401() throws {

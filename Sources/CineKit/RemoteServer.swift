@@ -17,6 +17,7 @@ final class RemoteServer {
 
     static let port = 8686
     private static let tokenKey = "remoteToken"
+    private static let themeKey = "appTheme"
     private static let maxRequestSize = 64 * 1024
     private static let logger = Logger(subsystem: "dev.guilhermemendes.CineKit", category: "RemoteServer")
 
@@ -111,7 +112,8 @@ final class RemoteServer {
 
     private func respond(to request: RemoteHTTPRequest) -> RemoteResponse {
         let folder = Bundle.main.resourceURL?.appending(path: "remote")
-        let response = RemoteRoute.response(for: request, token: token, clickSound: clickSound) { path in
+        let theme = AppTheme(rawValue: UserDefaults.standard.string(forKey: Self.themeKey) ?? "") ?? .dark
+        let response = RemoteRoute.response(for: request, token: token, clickSound: clickSound, theme: theme) { path in
             folder.flatMap { try? Data(contentsOf: $0.appending(path: path)) }
         }
         if response.status == 400 {
@@ -120,6 +122,7 @@ final class RemoteServer {
         if let button = response.button { press(button) }
         if let pointer = response.pointer { SyntheticPointer.perform(pointer) }
         if let text = response.text { type(text) }
+        if let theme = response.theme { UserDefaults.standard.set(theme.rawValue, forKey: Self.themeKey) }
         return response
     }
 
