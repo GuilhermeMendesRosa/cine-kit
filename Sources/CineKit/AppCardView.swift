@@ -20,12 +20,13 @@ struct AppCardView: View {
 
     @ViewBuilder
     private var artwork: some View {
-        if let url = store.imageURL(for: app), let image = NSImage(contentsOf: url) {
+        if let url = store.imageURL(for: app) ?? Bundle.module.url(forResource: app.id, withExtension: "png"),
+           let image = NSImage(contentsOf: url) {
             Image(nsImage: image)
                 .resizable()
                 .scaledToFill()
         } else {
-            // Defaults show the brand name; custom apps without a photo show their initial.
+            // Defaults without a bundled cover show the brand name; custom apps without a photo show their initial.
             shape
                 .fill(Color(hex: app.colorHex).gradient)
                 .overlay {

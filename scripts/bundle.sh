@@ -8,8 +8,11 @@ export SDKROOT="${SDKROOT:-/Library/Developer/CommandLineTools/SDKs/MacOSX26.sdk
 swift build -c release
 app=.build/CineKit.app
 rm -rf "$app"
-mkdir -p "$app/Contents/MacOS"
-cp "$(swift build -c release --show-bin-path)/CineKit" "$app/Contents/MacOS/CineKit"
+mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
+bin="$(swift build -c release --show-bin-path)"
+cp "$bin/CineKit" "$app/Contents/MacOS/CineKit"
+# Bundle.module looks for the SwiftPM resource bundle in Contents/Resources.
+cp -R "$bin/CineKit_CineKit.bundle" "$app/Contents/Resources/"
 
 cat > "$app/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>

@@ -6,7 +6,7 @@ let package = Package(
     platforms: [.macOS(.v26)],
     targets: [
         .target(name: "CineKitCore"),
-        .executableTarget(name: "CineKit", dependencies: ["CineKitCore"]),
+        .executableTarget(name: "CineKit", dependencies: ["CineKitCore"], resources: [.process("Resources")]),
         .testTarget(name: "CineKitCoreTests", dependencies: ["CineKitCore"]),
     ]
 )
