@@ -83,6 +83,8 @@ public final class AndroidRuntime {
         guard let badging = ApkBadging.parse(try await runner.run(sdk.aapt2, ["dump", "badging", path])) else {
             throw AndroidRuntimeError.invalidApk
         }
+        // The TV image ships Play Protect, whose "Install anyway" dialog would wait on the hidden screen.
+        _ = try await adb("shell", "settings", "put", "global", "verifier_verify_adb_installs", "0")
         _ = try await adb("install", "-r", path)
         return badging
     }

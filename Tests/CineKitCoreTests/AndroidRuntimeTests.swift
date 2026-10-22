@@ -97,6 +97,7 @@ struct AndroidRuntimeTests {
         #expect(installed.label == "Jellyfin")
         #expect(runner.calls == [
             "aapt2 dump badging /tmp/jellyfin.apk",
+            "adb -s emulator-5554 shell settings put global verifier_verify_adb_installs 0",
             "adb -s emulator-5554 install -r /tmp/jellyfin.apk",
         ])
     }
