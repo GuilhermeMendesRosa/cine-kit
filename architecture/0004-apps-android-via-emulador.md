@@ -3,7 +3,7 @@
 - **Status:** Aceito
 - **Data:** 2026-10-22
 - **Substitui:** —
-- **Substituído por:** —
+- **Substituído por:** [0009](0009-video-android-pelo-framebuffer-do-emulador.md) (só a parte de vídeo)
 
 ## Contexto
 
