@@ -52,7 +52,14 @@ swift build                                                                  # b
 swift test -Xswiftc -plugin-path -Xswiftc "$TESTING_PLUGINS"                 # suíte completa
 swift test -Xswiftc -plugin-path -Xswiftc "$TESTING_PLUGINS" --filter ShelfFocusTests  # uma suíte
 scripts/bundle.sh && open .build/CineKit.app                                 # monta e abre o .app
+scripts/android-setup.sh                                                     # opcional: SDK, AVD e scrcpy-server dos apps Android
 ```
+
+Apps Android ([ADR 0004](architecture/0004-apps-android-via-emulador.md)):
+
+- O SDK fica em `/opt/homebrew/share/android-commandlinetools`, o AVD é `cinekit-tv` e o scrcpy-server vai para `~/Library/Application Support/CineKit/android/`.
+- O app **não lê `ANDROID_HOME`**: apps abertos pelo Finder não herdam o ambiente, então o caminho é fixo em `AndroidSDK.default`.
+- Sem rodar o `scripts/android-setup.sh` antes, a parte Android fica escondida (sem botão "Adicionar APK…" nem seção Android) e não há como testá-la.
 
 Armadilhas das Command Line Tools:
 

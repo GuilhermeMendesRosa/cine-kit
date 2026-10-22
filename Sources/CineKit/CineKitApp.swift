@@ -11,16 +11,29 @@ struct CineKitApp: App {
         WindowGroup {
             RootView()
                 .environment(store)
+                .environment(appDelegate.androidRuntime)
                 .preferredColorScheme(.dark)
         }
     }
 }
 
+@MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    /// Nil without the Android SDK: the Android UI stays hidden (ADR 0004).
+    let androidRuntime = AndroidSDK.default.isAvailable ? AndroidRuntime(sdk: .default, runner: ProcessCommandRunner()) : nil
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.activate()
         DispatchQueue.main.async {
             NSApp.windows.first?.toggleFullScreen(nil)
         }
+        if let androidRuntime {
+            // A failure here is retried when an Android app is opened.
+            Task { try? await androidRuntime.start(resolution: .hd1080) }
+        }
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        androidRuntime?.stop()
     }
 }
