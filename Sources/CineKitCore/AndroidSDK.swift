@@ -23,10 +23,11 @@ public struct AndroidSDK: Sendable {
     public var emulator: URL { root.appending(path: "emulator/emulator") }
     public var aapt2: URL { root.appending(path: "build-tools/35.0.0/aapt2") }
     public var scrcpyServer: URL { dataDirectory.appending(path: "scrcpy-server") }
+    public var systemImage: URL { root.appending(path: AndroidAVD.systemImage) }
     public var avd: URL { avdHome.appending(path: "\(avdName).avd") }
 
     public var isAvailable: Bool {
-        [adb, emulator, aapt2, scrcpyServer, avd].allSatisfy {
+        [adb, emulator, aapt2, scrcpyServer, systemImage, avd].allSatisfy {
             FileManager.default.fileExists(atPath: $0.path(percentEncoded: false))
         }
     }
