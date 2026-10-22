@@ -6,7 +6,7 @@ Instruções para agentes de IA (Claude Code, Codex, Cursor, Copilot, etc.) que 
 
 **cine-kit** é um app para macOS que transforma o Mac numa TV box: UI em tela cheia, navegável à distância por controle remoto/teclado, focada em mídia. Veja o [README](README.md) para a visão geral.
 
-Fase atual: **preparação do repositório**. Ainda não existe código nem stack definida.
+Fase atual: **MVP em desenvolvimento**. Stack: Swift + SwiftUI/AppKit/WebKit num Swift Package, macOS 26+ (ADRs [0002](architecture/0002-app-nativo-swift-com-webkit.md), [0005](architecture/0005-ui-nativa-com-liquid-glass.md), [0006](architecture/0006-estrutura-swift-package.md)).
 
 ## Antes de começar qualquer tarefa
 
@@ -41,7 +41,23 @@ Processo:
 
 ## Comandos
 
-Ainda não há build, testes ou lint. Quando o projeto for criado, documente aqui os comandos exatos (build, test, lint, run) — agentes dependem desta seção para validar o próprio trabalho.
+Rodam só com as Command Line Tools (sem Xcode). Ainda não há lint.
+
+```sh
+export SDKROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX26.sdk
+TESTING_PLUGINS=/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing
+
+swift build                                                                  # build
+swift test -Xswiftc -plugin-path -Xswiftc "$TESTING_PLUGINS"                 # suíte completa
+swift test -Xswiftc -plugin-path -Xswiftc "$TESTING_PLUGINS" --filter ShelfFocusTests  # uma suíte
+scripts/bundle.sh && open .build/CineKit.app                                 # monta e abre o .app
+```
+
+Armadilhas das Command Line Tools:
+
+- **`SDKROOT` no SDK 26:** no SDK do macOS 27, `@State` e outros wrappers do SwiftUI viram macros cujo plugin (`SwiftUIMacros`) só vem com o Xcode; sem o `SDKROOT` o build falha com `plugin for module 'SwiftUIMacros' not found`. O `scripts/bundle.sh` já fixa esse SDK.
+- **`-plugin-path` no `swift test`:** o plugin de macros do Swift Testing fica em `plugins/testing`, fora do caminho padrão; sem a flag, `@Test` falha com `plugin for module 'TestingMacros' not found`.
+- Com o Xcode instalado, as duas armadilhas somem e `swift build`/`swift test` puros funcionam.
 
 ## Mantendo este arquivo
 

@@ -1,6 +1,6 @@
 # 0002. App nativo em Swift com WebKit para os serviços de streaming
 
-- **Status:** Proposto
+- **Status:** Aceito
 - **Data:** 2026-10-21
 - **Substitui:** —
 - **Substituído por:** —

@@ -1,6 +1,6 @@
 # 0005. UI nativa com Liquid Glass
 
-- **Status:** Proposto
+- **Status:** Aceito
 - **Data:** 2026-10-21
 - **Substitui:** —
 - **Substituído por:** —

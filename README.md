@@ -2,7 +2,7 @@
 
 App para macOS que transforma o Mac numa TV box: uma interface de sala de estar, pensada para ser usada à distância (sofá + TV), com navegação por controle remoto/teclado e foco em mídia.
 
-> **Status:** fase inicial. O repositório ainda não tem código, só a estrutura de documentação e de decisões de arquitetura.
+> **Status:** MVP em desenvolvimento: home estilo TV com os serviços de streaming abrindo em WebKit.
 
 ## Objetivo
 
@@ -19,6 +19,14 @@ O escopo detalhado e as escolhas técnicas são registrados em [`architecture/`]
 ├── README.md          # Visão geral do projeto (este arquivo)
 ├── AGENTS.md          # Instruções para agentes de IA (Claude Code, Codex, Cursor, etc.)
 ├── CLAUDE.md          # Aponta para AGENTS.md
+├── Package.swift      # Swift Package (ADR 0006)
+├── Sources/
+│   ├── CineKitCore/   # Lógica pura, sem SwiftUI/AppKit/WebKit
+│   └── CineKit/       # App (UI)
+├── Tests/
+│   └── CineKitCoreTests/
+├── scripts/
+│   └── bundle.sh      # Monta .build/CineKit.app
 └── architecture/      # Architecture Decision Records (ADRs)
     ├── README.md      # Índice e processo dos ADRs
     ├── template.md    # Modelo para novos ADRs
@@ -34,4 +42,10 @@ Este repositório é **AI-first**: agentes de código são colaboradores de prim
 
 ## Como rodar
 
-Ainda não há código. Esta seção será preenchida quando o projeto Xcode/Swift Package for criado.
+Requer macOS 26+ e as Command Line Tools (`xcode-select --install`).
+
+```sh
+scripts/bundle.sh && open .build/CineKit.app
+```
+
+Build e testes: veja a seção "Comandos" do [`AGENTS.md`](AGENTS.md).
