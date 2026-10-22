@@ -40,3 +40,4 @@ O objetivo é que qualquer pessoa — ou agente de IA — entenda **por que** o 
 | [0013](0013-tema-e-configuracoes-navegaveis.md) | Tema claro/escuro e Configurações navegáveis por setas | Aceito | 2026-10-22 |
 | [0014](0014-servicos-vivos-em-segundo-plano.md) | Serviços vivos em segundo plano | Aceito | 2026-10-22 |
 | [0015](0015-controle-absoluto-analogico-e-som.md) | Touchpad mais rápido, faixa de rolagem analógica e som de clique por app | Proposto | 2026-10-22 |
+| [0016](0016-teclado-de-texto-no-controle.md) | Teclado de texto no controle | Proposto | 2026-10-22 |

@@ -3,7 +3,7 @@
 - **Status:** Proposto
 - **Data:** 2026-10-22
 - **Substitui:** no [0012](0012-controle-unico-com-paridade-de-teclado-e-mouse.md), no "Touchpad no celular", o ganho do touchpad e a faixa com ganho 2×, o "Segurar Voltar (600 ms)" e o "Layout do controle"; no [0013](0013-tema-e-configuracoes-navegaveis.md), o fundo em gradiente do controle
-- **Substituído por:** —
+- **Substituído por:** [0016](0016-teclado-de-texto-no-controle.md) (trechos)
 
 ## Contexto
 
