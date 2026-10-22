@@ -35,6 +35,7 @@ Processo:
 
 - **Idioma:** documentação em português (pt-BR). Código, identificadores, nomes de arquivo de código e mensagens de commit em inglês.
 - **Commits:** pequenos e focados, no formato [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`).
+- **Branch única:** projeto de uma pessoa só. Todo trabalho é commitado direto na `main` e enviado com `git push origin main`. Não crie branches, worktrees nem pull requests.
 - **Mudanças mínimas:** faça só o que a tarefa pede. Sem refactors oportunistas, sem arquivos extras.
 - **Sem segredos no repositório:** nada de chaves de API, tokens ou credenciais em código ou docs.
 - **UI:** antes de criar ou revisar qualquer view, leia [`.claude/skills/liquid-glass/SKILL.md`](.claude/skills/liquid-glass/SKILL.md) (regras de Liquid Glass, 10-foot UI e foco, com checklist de revisão).
@@ -61,4 +62,4 @@ Armadilhas das Command Line Tools:
 
 ## Mantendo este arquivo
 
-Se você (agente ou humano) descobrir algo que outro agente precisaria saber para trabalhar bem aqui — um comando, uma armadilha, uma convenção — atualize este arquivo no mesmo PR.
+Se você (agente ou humano) descobrir algo que outro agente precisaria saber para trabalhar bem aqui — um comando, uma armadilha, uma convenção — atualize este arquivo no mesmo commit.
