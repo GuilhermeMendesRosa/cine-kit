@@ -96,6 +96,8 @@ public final class AndroidRuntime {
 
     /// TV apps declare LEANBACK_LAUNCHER; phone apps only LAUNCHER.
     public func launch(package: String) async throws {
+        // Media volume (stream 3) at its maximum, 15, so the Mac's volume is the one that matters.
+        _ = try await adb("shell", "cmd", "audio", "set-volume", "3", "15")
         for category in ["android.intent.category.LEANBACK_LAUNCHER", "android.intent.category.LAUNCHER"] {
             let output = try await adb("shell", "cmd", "package", "resolve-activity", "--brief", "-a", "android.intent.action.MAIN", "-c", category, package)
             // The component is the last line; "No activity found" when the category is missing.

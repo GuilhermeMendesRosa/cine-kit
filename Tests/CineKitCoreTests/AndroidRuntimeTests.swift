@@ -115,6 +115,17 @@ struct AndroidRuntimeTests {
         #expect(runner.calls.last == "adb -s emulator-5554 shell am start -n org.example.phone/.MainActivity")
     }
 
+    @Test func launchMaxesMediaVolumeSoTheMacControlsIt() async throws {
+        runner.respond(
+            "-s emulator-5554 shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.LEANBACK_LAUNCHER org.jellyfin.androidtv",
+            "org.jellyfin.androidtv/.MainActivity\n"
+        )
+
+        try await runtime.launch(package: "org.jellyfin.androidtv")
+
+        #expect(runner.calls.contains("adb -s emulator-5554 shell cmd audio set-volume 3 15"))
+    }
+
     @Test func ensureRunningRestartsDeadEmulatorOnce() async throws {
         runner.respond("devices", "List of devices attached\n\n")
 
