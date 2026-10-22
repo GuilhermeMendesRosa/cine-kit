@@ -62,6 +62,16 @@ public final class AndroidRuntime {
         throw AndroidRuntimeError.bootTimeout
     }
 
+    /// Changing the resolution needs a cold start: `-skin` only applies at launch.
+    public func restart(resolution: Resolution) async throws {
+        stop()
+        for _ in 0..<30 {
+            guard try await deviceState() != nil else { break }
+            try await sleep(.seconds(1))
+        }
+        try await start(resolution: resolution)
+    }
+
     /// Starts the emulator again when `adb devices` no longer lists it.
     public func ensureRunning(resolution: Resolution) async throws {
         guard try await deviceState() == nil else { return }

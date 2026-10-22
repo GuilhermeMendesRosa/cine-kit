@@ -29,7 +29,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         if let androidRuntime {
             // A failure here is retried when an Android app is opened.
-            Task { try? await androidRuntime.start(resolution: .hd1080) }
+            let resolution = UserDefaults.standard.string(forKey: "androidResolution").flatMap(AndroidRuntime.Resolution.init) ?? .hd1080
+            Task { try? await androidRuntime.start(resolution: resolution) }
         }
     }
 

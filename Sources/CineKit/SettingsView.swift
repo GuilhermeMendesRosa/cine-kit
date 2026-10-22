@@ -27,6 +27,7 @@ struct SettingsView: View {
     @State private var confirmsRestore = false
     @State private var saveError: String?
     @State private var isInstalling = false
+    @AppStorage("androidResolution") private var androidResolution = AndroidRuntime.Resolution.hd1080
     @FocusState private var listFocused: Bool
 
     var body: some View {
@@ -44,6 +45,19 @@ struct SettingsView: View {
                     .keyboardShortcut("r", modifiers: [.command, .shift])
             }
             .controlSize(.extraLarge)
+
+            if let androidRuntime {
+                Picker("Resolução do Android", selection: $androidResolution) {
+                    Text("1080p").tag(AndroidRuntime.Resolution.hd1080)
+                    Text("4K").tag(AndroidRuntime.Resolution.uhd4k)
+                }
+                .font(.title2)
+                .controlSize(.extraLarge)
+                .fixedSize()
+                .onChange(of: androidResolution) { _, resolution in
+                    Task { try? await androidRuntime.restart(resolution: resolution) }
+                }
+            }
 
             List(store.apps, selection: $selection) { app in
                 HStack {

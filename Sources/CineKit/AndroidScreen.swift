@@ -19,6 +19,7 @@ struct AndroidScreen: View {
     @State private var renderer = H264Renderer()
     @State private var client: ScrcpyClient?
     @State private var keyMonitor: Any?
+    @AppStorage("androidResolution") private var resolution = AndroidRuntime.Resolution.hd1080
 
     var body: some View {
         Group {
@@ -61,7 +62,7 @@ struct AndroidScreen: View {
         }
         do {
             let deadline = ContinuousClock.now + .seconds(90)
-            try await runtime.ensureRunning(resolution: .hd1080)
+            try await runtime.ensureRunning(resolution: resolution)
             try await runtime.waitUntilBooted()
             try await runtime.launch(package: package)
             while try await runtime.foregroundPackage() != package {
