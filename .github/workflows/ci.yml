@@ -1,0 +1,21 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  workflow_call:
+
+jobs:
+  test:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: remote/package-lock.json
+      # The runner has Xcode, so the CLT pitfalls in AGENTS.md do not apply.
+      - run: swift test
+      - run: npm ci && npm test
+        working-directory: remote

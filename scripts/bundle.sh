@@ -2,8 +2,13 @@
 # Builds the release binary and wraps it in .build/CineKit.app (ad hoc signed).
 set -eu
 cd "$(dirname "$0")/.."
-# The CLT macOS 27 SDK needs SwiftUI macro plugins that only ship with Xcode (see AGENTS.md).
-export SDKROOT="${SDKROOT:-/Library/Developer/CommandLineTools/SDKs/MacOSX26.sdk}"
+# The CLT macOS 27 SDK needs SwiftUI macro plugins that only ship with Xcode (see AGENTS.md); with Xcode, as in CI, no pin.
+case "$(xcode-select -p 2>/dev/null)" in
+    *.app/*) ;;
+    *) export SDKROOT="${SDKROOT:-/Library/Developer/CommandLineTools/SDKs/MacOSX26.sdk}" ;;
+esac
+# Set from the release tag (ADR 0017).
+version="${VERSION:-0.0.0-dev}"
 
 swift build -c release
 app=.build/CineKit.app
@@ -41,6 +46,10 @@ cat > "$app/Contents/Info.plist" <<PLIST
     <string>CineKit</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>$version</string>
+    <key>CFBundleVersion</key>
+    <string>$version</string>
     <key>LSMinimumSystemVersion</key>
     <string>26.0</string>
     <key>NSLocalNetworkUsageDescription</key>

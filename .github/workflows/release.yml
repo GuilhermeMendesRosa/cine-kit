@@ -1,0 +1,33 @@
+name: Release
+
+# Pushing a vX.Y.Z tag publishes CineKit-X.Y.Z.dmg on GitHub Releases (ADR 0017).
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    uses: ./.github/workflows/ci.yml
+
+  release:
+    needs: test
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: remote/package-lock.json
+      - run: VERSION="${GITHUB_REF_NAME#v}" scripts/bundle.sh
+      - run: scripts/dmg.sh
+      - run: |
+          gh release create "$GITHUB_REF_NAME" .build/CineKit-*.dmg \
+            --title "CineKit ${GITHUB_REF_NAME#v}" \
+            --notes "Baixe o \`.dmg\`, arraste o CineKit para Aplicativos e veja no [README](https://github.com/${GITHUB_REPOSITORY}#instalação) como liberar a primeira abertura." \
+            --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}
