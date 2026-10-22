@@ -7,6 +7,7 @@ struct HomeView: View {
     let onOpen: (StreamingApp) -> Void
     let onOpenSettings: () -> Void
 
+    @Environment(InputMode.self) private var inputMode
     @FocusState private var hasKeyboardFocus: Bool
 
     var body: some View {
@@ -20,6 +21,7 @@ struct HomeView: View {
                             .padding(16)
                     }
                     .buttonStyle(.glass(focus.target == .settings ? .regular.tint(.accentColor) : .regular))
+                    .onHover { if $0, inputMode.kind == .pointer { focus.target = .settings } }
                 }
             }
             .padding(.horizontal, 80)
@@ -56,6 +58,9 @@ struct HomeView: View {
                     ForEach(Array(apps.enumerated()), id: \.element.id) { index, app in
                         AppCardView(app: app, isFocused: focus.target == .card(index))
                             .id(index)
+                            // While pointing, focus follows the pointer so the arrows continue from there (ADR 0012).
+                            .onHover { if $0, inputMode.kind == .pointer { focus = ShelfFocusState(target: .card(index), lastCard: index) } }
+                            .onTapGesture { onOpen(app) }
                     }
                 }
                 .padding(20)
@@ -65,6 +70,8 @@ struct HomeView: View {
             .padding(.horizontal, 80)
             .onAppear { proxy.scrollTo(focus.lastCard, anchor: .center) }
             .onChange(of: focus.lastCard) { _, index in
+                // Scrolling under a still pointer would put another card under it.
+                guard inputMode.kind == .keys else { return }
                 withAnimation { proxy.scrollTo(index, anchor: .center) }
             }
         }

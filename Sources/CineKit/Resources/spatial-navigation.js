@@ -1,6 +1,8 @@
 (() => {
   const CANDIDATES = 'a[href], button, input, select, textarea, [role=button], [role=link], [tabindex]';
   const FOCUS_ATTRIBUTE = 'data-cinekit-focus';
+  // "pointer" while the mouse moves, which hides the ring; "keys" again on the next arrow (ADR 0012).
+  const INPUT_ATTRIBUTE = 'data-cinekit-input';
   const TEXT_INPUT_TYPES = ['text', 'search', 'email', 'url', 'tel', 'password', 'number'];
   const DIRECTIONS = {
     ArrowUp: { x: 0, y: -1 },
@@ -10,7 +12,7 @@
   };
 
   const style = document.createElement('style');
-  style.textContent = `[${FOCUS_ATTRIBUTE}] {
+  style.textContent = `html:not([${INPUT_ATTRIBUTE}=pointer]) [${FOCUS_ATTRIBUTE}] {
     outline: 4px solid white !important;
     outline-offset: 4px !important;
     box-shadow: 0 0 0 8px rgba(0, 0, 0, .6) !important;
@@ -82,9 +84,13 @@
     return best;
   };
 
-  const focus = (el) => {
+  const mark = (el) => {
     document.querySelector(`[${FOCUS_ATTRIBUTE}]`)?.removeAttribute(FOCUS_ATTRIBUTE);
     el.setAttribute(FOCUS_ATTRIBUTE, '');
+  };
+
+  const focus = (el) => {
+    mark(el);
     el.focus({ preventScroll: true });
     el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' });
   };
@@ -112,7 +118,11 @@
       return true;
     }
 
-    const next = isCandidate(active) ? nextInDirection(active, direction) : firstVisible();
+    // The arrows continue from the item under the pointer, if the mouse was used last.
+    const marked = document.querySelector(`[${FOCUS_ATTRIBUTE}]`);
+    const origin = isCandidate(marked) ? marked : active;
+    const next = isCandidate(origin) ? nextInDirection(origin, direction) : firstVisible();
+    document.documentElement.setAttribute(INPUT_ATTRIBUTE, 'keys');
     if (next) {
       focus(next);
     } else {
@@ -129,5 +139,20 @@
       event.stopPropagation();
     },
     true
+  );
+
+  // Marks the item under the pointer without focusing it, so the site's focus handlers do not run on hover.
+  let lastPointer = null;
+  window.addEventListener(
+    'mousemove',
+    (event) => {
+      // WebKit also sends a mousemove after scrolling, with the pointer still.
+      if (lastPointer && lastPointer.x === event.screenX && lastPointer.y === event.screenY) return;
+      lastPointer = { x: event.screenX, y: event.screenY };
+      document.documentElement.setAttribute(INPUT_ATTRIBUTE, 'pointer');
+      const el = event.target.closest?.(CANDIDATES);
+      if (isCandidate(el)) mark(el);
+    },
+    { capture: true, passive: true }
   );
 })();
