@@ -35,7 +35,7 @@ struct AndroidScreen: View {
                 .background(.black)
             case .playing:
                 if let frames {
-                    EmulatorFrameView(source: frames)
+                    EmulatorFrameView(source: frames) { client?.send($0) }
                         .ignoresSafeArea()
                 }
             case .failed:

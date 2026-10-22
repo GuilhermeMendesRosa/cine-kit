@@ -12,6 +12,8 @@ final class EmulatorFrameSource {
 
     private let region: UnsafeRawBufferPointer
     private var lastFrame: UInt32?
+    /// Of the last frame read, in Android pixels.
+    private(set) var frameSize: (width: Int, height: Int)?
 
     init() throws {
         // shm_open is variadic in C; the mode argument only matters with O_CREAT.
@@ -33,6 +35,7 @@ final class EmulatorFrameSource {
     /// The current frame, or nil when it did not change since the last call.
     func nextImage() -> CGImage? {
         guard let header = EmulatorFrameHeader(region, regionSize: region.count), header.frameNumber != lastFrame else { return nil }
+        frameSize = (header.width, header.height)
         let pixels = Data(bytes: region.baseAddress! + EmulatorFrameHeader.size, count: header.width * header.height * 4)
         // The emulator may have written a new frame during the copy; drop the torn one and retry on the next tick.
         guard EmulatorFrameHeader(region, regionSize: region.count)?.frameNumber == header.frameNumber,
@@ -55,20 +58,27 @@ final class EmulatorFrameSource {
 
 struct EmulatorFrameView: NSViewRepresentable {
     let source: EmulatorFrameSource
+    let onControl: (ScrcpyControlMessage) -> Void
 
     func makeNSView(context: Context) -> FrameView {
-        FrameView(source: source)
+        FrameView(source: source, onControl: onControl)
     }
 
     func updateNSView(_ view: FrameView, context: Context) {}
 
-    /// Polls the shared framebuffer once per screen refresh.
+    /// Polls the shared framebuffer once per screen refresh and turns the Mac mouse into touches (ADR 0012).
     final class FrameView: NSView {
+        // Scroll deltas per Android scroll step: trackpads and the remote send precise pixel deltas, wheels send lines.
+        private static let preciseScrollStep = 20.0
+        private static let wheelScrollStep = 1.0
+
         private let source: EmulatorFrameSource
+        private let onControl: (ScrcpyControlMessage) -> Void
         private var displayLink: CADisplayLink?
 
-        init(source: EmulatorFrameSource) {
+        init(source: EmulatorFrameSource, onControl: @escaping (ScrcpyControlMessage) -> Void) {
             self.source = source
+            self.onControl = onControl
             super.init(frame: .zero)
             wantsLayer = true
             layer?.backgroundColor = .black
@@ -90,6 +100,40 @@ struct EmulatorFrameView: NSViewRepresentable {
 
         @objc private func tick() {
             if let image = source.nextImage() { layer?.contents = image }
+        }
+
+        override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+        override func mouseDown(with event: NSEvent) { touch(.down, event) }
+
+        override func mouseDragged(with event: NSEvent) { touch(.move, event) }
+
+        override func mouseUp(with event: NSEvent) { touch(.up, event) }
+
+        override func scrollWheel(with event: NSEvent) {
+            guard let (point, size) = devicePoint(event) else { return }
+            let step = event.hasPreciseScrollingDeltas ? Self.preciseScrollStep : Self.wheelScrollStep
+            onControl(.injectScroll(
+                x: point.x, y: point.y, width: size.width, height: size.height,
+                horizontal: Float(event.scrollingDeltaX / step), vertical: Float(event.scrollingDeltaY / step)
+            ))
+        }
+
+        private func touch(_ action: ScrcpyControlMessage.TouchAction, _ event: NSEvent) {
+            guard let (point, size) = devicePoint(event) else { return }
+            onControl(.injectTouch(action: action, x: point.x, y: point.y, width: size.width, height: size.height))
+        }
+
+        /// Nil before the first frame or on the bars around the image.
+        private func devicePoint(_ event: NSEvent) -> (point: (x: Int32, y: Int32), size: (width: UInt16, height: UInt16))? {
+            guard let frame = source.frameSize else { return nil }
+            let location = convert(event.locationInWindow, from: nil)
+            guard let point = EmulatorPointer.devicePoint(
+                // Android's origin is at the top left; flipping the view instead could flip the video layer.
+                x: location.x, y: bounds.height - location.y, viewWidth: bounds.width, viewHeight: bounds.height,
+                frameWidth: frame.width, frameHeight: frame.height
+            ) else { return nil }
+            return (point, (UInt16(frame.width), UInt16(frame.height)))
         }
     }
 }
