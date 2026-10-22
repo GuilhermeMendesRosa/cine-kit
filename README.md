@@ -28,6 +28,7 @@ O escopo detalhado e as escolhas técnicas são registrados em [`architecture/`]
 │   └── CineKit/       # App (UI)
 ├── Tests/
 │   └── CineKitCoreTests/
+├── remote/            # App web do controle remoto (React + Vite, ADR 0011)
 ├── scripts/
 │   └── bundle.sh      # Monta .build/CineKit.app
 └── architecture/      # Architecture Decision Records (ADRs)

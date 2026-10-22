@@ -13,6 +13,9 @@ bin="$(swift build -c release --show-bin-path)"
 cp "$bin/CineKit" "$app/Contents/MacOS/CineKit"
 # Bundle.module looks for the SwiftPM resource bundle in Contents/Resources.
 cp -R "$bin/CineKit_CineKit.bundle" "$app/Contents/Resources/"
+# The web remote the app serves on the local network (ADR 0003, 0011).
+(cd remote && npm ci && npm run build)
+cp -R remote/dist "$app/Contents/Resources/remote"
 
 # iconutil and sips ship with macOS, so the icon builds without Xcode.
 iconset="$(mktemp -d)/AppIcon.iconset"

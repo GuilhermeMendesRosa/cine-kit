@@ -11,6 +11,10 @@ build/
 .build/
 .swiftpm/
 
+# Web remote
+remote/node_modules/
+remote/dist/
+
 # Env / secrets
 .env
 .env.*

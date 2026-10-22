@@ -55,6 +55,15 @@ scripts/bundle.sh && open .build/CineKit.app                                 # m
 scripts/android-setup.sh                                                     # opcional: SDK, AVD e scrcpy-server dos apps Android
 ```
 
+Controle remoto web ([ADR 0003](architecture/0003-controle-remoto-web-via-wifi.md), [0011](architecture/0011-app-web-do-controle-em-react.md)), em `remote/` (Node 22 + npm; o `scripts/bundle.sh` também precisa deles):
+
+```sh
+(cd remote && npm ci && npm test)   # testes do app web
+(cd remote && npm run dev)          # itera no layout no navegador do Mac
+```
+
+- Para testar no celular, use o `.app`: ele serve o build em `http://<LocalHostName>.local:8686`, e o QR fica em Configurações → Controle remoto. O `npm run dev` não tem a API.
+
 Apps Android ([ADR 0004](architecture/0004-apps-android-via-emulador.md)):
 
 - O SDK fica em `/opt/homebrew/share/android-commandlinetools`, o AVD é `cinekit-tv` e o scrcpy-server vai para `~/Library/Application Support/CineKit/android/`.
