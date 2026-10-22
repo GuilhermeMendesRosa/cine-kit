@@ -33,6 +33,7 @@ struct SettingsView: View {
 
     @Environment(AppCatalogStore.self) private var store
     @Environment(AndroidRuntime.self) private var androidRuntime: AndroidRuntime?
+    @Environment(AndroidSetup.self) private var androidSetup
     @Environment(RemoteServer.self) private var remoteServer
     @Environment(InputMode.self) private var inputMode
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -73,14 +74,16 @@ struct SettingsView: View {
                                 .padding(.top, 16)
                         }
                     }
-                    if androidRuntime != nil {
-                        section("Android") {
+                    section("Android") {
+                        if androidRuntime != nil {
                             HStack(spacing: 16) {
                                 Text("Resolução")
                                     .font(.title2)
                                     .frame(width: 200, alignment: .leading)
                                 controls(rows, row: actionsRow + 1)
                             }
+                        } else {
+                            androidInstallSection(rows)
                         }
                     }
                     section("Controle remoto") {
@@ -170,7 +173,7 @@ struct SettingsView: View {
         }
     }
 
-    // Rows of the focus grid: back, theme, one per app, add/restore, Android resolution (with the runtime), remote.
+    // Rows of the focus grid: back, theme, one per app, add/restore, Android resolution or install, remote.
     private static let backRow = 0
     private static let themeRow = 1
     private static let firstAppRow = 2
@@ -198,6 +201,8 @@ struct SettingsView: View {
                     androidResolution = resolution
                 }
             })
+        } else if !androidSetup.isInstalling {
+            rows.append([Control(title: "Instalar apps Android", systemImage: "arrow.down.circle") { androidSetup.install() }])
         }
         if remoteServer.pairingURL != nil, remoteServer.state == .running {
             rows.append([Control(title: "Gerar novo código", systemImage: "qrcode") { remoteServer.regenerateToken() }])
@@ -296,6 +301,28 @@ struct SettingsView: View {
                         .textSelection(.enabled)
                     controls(rows, row: rows.count - 1)
                 }
+            }
+        }
+    }
+
+    /// Without the SDK: the install button, or the progress while it downloads (ADR 0018).
+    private func androidInstallSection(_ rows: [[Control]]) -> some View {
+        VStack(alignment: .leading, spacing: 24) {
+            if case .installing(let step, let fraction) = androidSetup.installer.state {
+                ProgressView(value: fraction) {
+                    Text("Instalando \(step)… \(fraction.formatted(.percent.precision(.fractionLength(0))))")
+                        .font(.title2)
+                }
+                .frame(maxWidth: 800)
+            } else {
+                Text(AndroidSetup.installMessage)
+                    .font(.title2)
+                    .foregroundStyle(.secondary)
+                if let failure = androidSetup.failure {
+                    Text("A instalação falhou: \(failure)")
+                        .font(.title2)
+                }
+                controls(rows, row: actionsRow + 1)
             }
         }
     }

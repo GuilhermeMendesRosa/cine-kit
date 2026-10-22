@@ -9,12 +9,14 @@ struct RootView: View {
     @Environment(AppCatalogStore.self) private var store
     @Environment(WebViewCache.self) private var webViewCache
     @Environment(RemoteServer.self) private var remoteServer
+    @Environment(AndroidSetup.self) private var androidSetup
     @State private var openApp: StreamingApp?
     @State private var isShowingSettings = false
     @State private var loadError: String?
     @State private var shelfFocus = ShelfFocusState(target: .card(0), lastCard: 0)
     @State private var escapeMonitor: Any?
     @AppStorage("appTheme") private var theme = AppTheme.dark
+    @AppStorage("askedAndroidInstall") private var askedAndroidInstall = false
 
     var body: some View {
         Group {
@@ -34,7 +36,21 @@ struct RootView: View {
                 HomeView(apps: store.apps, focus: $shelfFocus, onOpen: { openApp = $0 }, onOpenSettings: { isShowingSettings = true })
             }
         }
+        // Here and not in the App, so the runtime reaches the screens as soon as the install creates it.
+        .environment(androidSetup.runtime)
         .onChange(of: store.apps) { _, apps in webViewCache.discardStale(apps) }
+        // Asked once, on the first launch without the SDK (ADR 0018); Settings keeps the install button.
+        .alert("Instalar o suporte a apps Android?", isPresented: .constant(!askedAndroidInstall && androidSetup.runtime == nil)) {
+            Button("Instalar") {
+                askedAndroidInstall = true
+                androidSetup.install()
+                isShowingSettings = true
+            }
+            .keyboardShortcut(.defaultAction)
+            Button("Agora não", role: .cancel) { askedAndroidInstall = true }
+        } message: {
+            Text(AndroidSetup.installMessage)
+        }
         .alert("Não foi possível carregar os apps", isPresented: .constant(loadError != nil)) {
             Button("OK") { loadError = nil }
         } message: {

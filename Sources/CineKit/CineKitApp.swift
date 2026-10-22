@@ -11,7 +11,7 @@ struct CineKitApp: App {
         WindowGroup {
             RootView()
                 .environment(store)
-                .environment(appDelegate.androidRuntime)
+                .environment(appDelegate.androidSetup)
                 .environment(appDelegate.remoteServer)
                 .environment(appDelegate.inputMode)
                 .environment(appDelegate.webViewCache)
@@ -21,8 +21,7 @@ struct CineKitApp: App {
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    /// Nil without the Android SDK: the Android UI stays hidden (ADR 0004).
-    let androidRuntime = AndroidSDK.default.isAvailable ? AndroidRuntime(sdk: .default, runner: ProcessCommandRunner()) : nil
+    let androidSetup = AndroidSetup()
     let remoteServer = RemoteServer()
     let inputMode = InputMode()
     let webViewCache = WebViewCache()
@@ -35,14 +34,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self.inputMode.start()
         }
         remoteServer.start()
-        if let androidRuntime {
-            // A failure here is retried when an Android app is opened.
-            let resolution = UserDefaults.standard.string(forKey: "androidResolution").flatMap(AndroidRuntime.Resolution.init) ?? .hd1080
-            Task { try? await androidRuntime.start(resolution: resolution) }
-        }
+        androidSetup.start()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        androidRuntime?.stop()
+        androidSetup.runtime?.stop()
     }
 }

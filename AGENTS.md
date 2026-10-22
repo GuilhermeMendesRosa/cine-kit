@@ -52,7 +52,6 @@ swift build                                                                  # b
 swift test -Xswiftc -plugin-path -Xswiftc "$TESTING_PLUGINS"                 # suíte completa
 swift test -Xswiftc -plugin-path -Xswiftc "$TESTING_PLUGINS" --filter ShelfFocusTests  # uma suíte
 scripts/bundle.sh && open .build/CineKit.app                                 # monta e abre o .app
-scripts/android-setup.sh                                                     # opcional: SDK, AVD e scrcpy-server dos apps Android
 ```
 
 Controle remoto web ([ADR 0003](architecture/0003-controle-remoto-web-via-wifi.md), [0011](architecture/0011-app-web-do-controle-em-react.md)), em `remote/` (Node 22 + npm; o `scripts/bundle.sh` também precisa deles):
@@ -64,11 +63,11 @@ Controle remoto web ([ADR 0003](architecture/0003-controle-remoto-web-via-wifi.m
 
 - Para testar no celular, use o `.app`: ele serve o build em `http://<LocalHostName>.local:8686`, e o QR fica em Configurações → Controle remoto. O `npm run dev` não tem a API.
 
-Apps Android ([ADR 0004](architecture/0004-apps-android-via-emulador.md)):
+Apps Android ([ADR 0004](architecture/0004-apps-android-via-emulador.md), [0018](architecture/0018-sdk-android-instalado-pelo-app.md)):
 
-- O SDK fica em `/opt/homebrew/share/android-commandlinetools`, o AVD é `cinekit-tv` e o scrcpy-server vai para `~/Library/Application Support/CineKit/android/`.
+- O próprio app instala o SDK (Configurações → Android → "Instalar apps Android", ou o aviso da primeira abertura): baixa os zips fixados em `AndroidSDKPackage` para `~/Library/Application Support/CineKit/android/sdk`, o scrcpy-server para `~/Library/Application Support/CineKit/android/` e escreve o AVD `cinekit-tv` em `~/.android/avd`. Sem Homebrew nem Java.
 - O app **não lê `ANDROID_HOME`**: apps abertos pelo Finder não herdam o ambiente, então o caminho é fixo em `AndroidSDK.default`.
-- Sem rodar o `scripts/android-setup.sh` antes, a parte Android fica escondida (sem botão "Adicionar APK…" nem seção Android) e não há como testá-la.
+- Para testar a instalação do zero, apague `~/Library/Application Support/CineKit/android` e `~/.android/avd/cinekit-tv.*`, e `defaults delete dev.guilhermemendes.CineKit askedAndroidInstall` para o aviso voltar.
 
 Armadilhas das Command Line Tools:
 
