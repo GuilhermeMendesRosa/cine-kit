@@ -52,7 +52,10 @@ swift build                                                                  # b
 swift test -Xswiftc -plugin-path -Xswiftc "$TESTING_PLUGINS"                 # suíte completa
 swift test -Xswiftc -plugin-path -Xswiftc "$TESTING_PLUGINS" --filter ShelfFocusTests  # uma suíte
 scripts/bundle.sh && open .build/CineKit.app                                 # monta e abre o .app
+scripts/dmg.sh                                                               # depois do bundle: .build/CineKit-<versão>.dmg
 ```
+
+Release ([ADR 0017](architecture/0017-distribuicao-por-dmg-no-github-releases.md)): `git tag vX.Y.Z && git push origin vX.Y.Z` dispara `.github/workflows/release.yml`, que testa, gera o `.dmg` (versão vinda da tag, por `VERSION`) e publica no GitHub Releases. O `ci.yml` roda os testes a cada push na `main`. Os runners têm Xcode, então as armadilhas das Command Line Tools abaixo não se aplicam lá.
 
 Controle remoto web ([ADR 0003](architecture/0003-controle-remoto-web-via-wifi.md), [0011](architecture/0011-app-web-do-controle-em-react.md)), em `remote/` (Node 22 + npm; o `scripts/bundle.sh` também precisa deles):
 
