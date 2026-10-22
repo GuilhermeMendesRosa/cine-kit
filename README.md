@@ -13,6 +13,17 @@
 
 > **Status:** MVP em desenvolvimento.
 
+<table>
+  <tr>
+    <td width="76%"><img src="assets/screenshot-home.png" alt="Home do cine-kit com o relógio, o QR do controle remoto e a fileira de serviços de streaming"></td>
+    <td width="24%"><img src="assets/screenshot-remote.png" alt="Controle remoto no celular, com volume, tema, home, voltar, teclado, play/pause, setas com OK e touchpad"></td>
+  </tr>
+  <tr>
+    <td align="center">Home no Mac</td>
+    <td align="center">Controle remoto no celular</td>
+  </tr>
+</table>
+
 ## Recursos
 
 - **Home de TV** em tela cheia ("10-foot UI"), com Liquid Glass, legível de longe e navegável só com as setas, OK e Voltar.
@@ -65,7 +76,7 @@ O workflow [`release.yml`](.github/workflows/release.yml) roda os testes, gera o
 ├── CLAUDE.md          # Aponta para AGENTS.md
 ├── LICENSE            # MIT
 ├── Package.swift      # Swift Package (ADR 0006)
-├── assets/            # Ícone do app (AppIcon.png)
+├── assets/            # Ícone do app (AppIcon.png) e capturas de tela do README
 ├── Sources/
 │   ├── CineKitCore/   # Lógica pura, sem SwiftUI/AppKit/WebKit
 │   └── CineKit/       # App (UI)
