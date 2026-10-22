@@ -1,0 +1,57 @@
+// Touchpad rules of ADR 0012: one finger moves, a quick touch clicks, two fingers (or the strip) scroll.
+const clickMaxMs = 250
+const clickMaxDistance = 10
+const scrollGain = 2
+const maxGain = 4
+
+/** Faster swipes travel further, like a Mac trackpad: gain 1.5 + 2 × speed (px/ms), at most 4. */
+export function accelerate(dx: number, dy: number, dtMs: number) {
+  const speed = Math.hypot(dx, dy) / Math.max(dtMs, 1)
+  const gain = Math.min(maxGain, 1.5 + 2 * speed)
+  return { dx: dx * gain, dy: dy * gain }
+}
+
+type Handlers = {
+  onMove: (dx: number, dy: number) => void
+  onScroll: (dx: number, dy: number) => void
+  onClick: () => void
+}
+
+/** Turns pointer positions (by pointer id, with timestamps in ms) into moves, scrolls and clicks. */
+export function createTouchpadGesture({ onMove, onScroll, onClick }: Handlers, { scrollOnly = false } = {}) {
+  const fingers = new Map<number, { x: number; y: number; t: number }>()
+  // The touch that may still become a click: one finger that stayed close to where it started.
+  let tap: { x: number; y: number; t: number } | null = null
+
+  return {
+    down(id: number, x: number, y: number, t: number) {
+      fingers.set(id, { x, y, t })
+      tap = fingers.size === 1 && !scrollOnly ? { x, y, t } : null
+    },
+    move(id: number, x: number, y: number, t: number) {
+      const last = fingers.get(id)
+      if (!last) return
+      fingers.set(id, { x, y, t })
+      const dx = x - last.x
+      const dy = y - last.y
+      if (tap && Math.hypot(x - tap.x, y - tap.y) > clickMaxDistance) tap = null
+      if (scrollOnly) {
+        onScroll(0, dy * scrollGain)
+      } else if (fingers.size > 1) {
+        onScroll((dx / fingers.size) * scrollGain, (dy / fingers.size) * scrollGain)
+      } else {
+        const moved = accelerate(dx, dy, t - last.t)
+        onMove(moved.dx, moved.dy)
+      }
+    },
+    up(id: number, t: number) {
+      if (!fingers.delete(id)) return
+      if (fingers.size === 0 && tap && t - tap.t <= clickMaxMs) onClick()
+      if (fingers.size === 0) tap = null
+    },
+    cancel(id: number) {
+      fingers.delete(id)
+      tap = null
+    },
+  }
+}

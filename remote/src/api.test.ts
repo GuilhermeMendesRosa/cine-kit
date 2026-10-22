@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { press } from './api'
+import { pointer, press } from './api'
 
 describe('press', () => {
   it('is ok on 204', async () => {
@@ -25,5 +25,22 @@ describe('press', () => {
     expect(init.method).toBe('POST')
     expect(new Headers(init.headers).get('Authorization')).toBe('Bearer abc')
     expect(JSON.parse(init.body)).toEqual({ button: 'volumeUp' })
+  })
+})
+
+describe('pointer', () => {
+  it('sends type and deltas', async () => {
+    const fetch = vi.fn().mockResolvedValue(new Response(null, { status: 204 }))
+    expect(await pointer({ type: 'move', dx: 3, dy: -4 }, { token: 'abc', fetch })).toBe('ok')
+    const [url, init] = fetch.mock.calls[0]
+    expect(url).toBe('/api/pointer')
+    expect(init.method).toBe('POST')
+    expect(new Headers(init.headers).get('Authorization')).toBe('Bearer abc')
+    expect(JSON.parse(init.body)).toEqual({ type: 'move', dx: 3, dy: -4 })
+  })
+
+  it('is unauthorized on 401', async () => {
+    const fetch = vi.fn().mockResolvedValue(new Response(null, { status: 401 }))
+    expect(await pointer({ type: 'click' }, { token: 'abc', fetch })).toBe('unauthorized')
   })
 })
