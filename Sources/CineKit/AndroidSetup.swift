@@ -21,10 +21,33 @@ final class AndroidSetup {
 
     var isInstalling: Bool { installer.state != .idle }
 
+    /// The device the emulator reads as, after "Trocar identidade"; nil keeps the stock emulator.
+    private(set) var identity = UserDefaults.standard.data(forKey: "androidIdentity").flatMap { try? JSONDecoder().decode(AndroidIdentity.self, from: $0) } {
+        didSet { UserDefaults.standard.set(try? JSONEncoder().encode(identity), forKey: "androidIdentity") }
+    }
+
     init() {
         if AndroidSDK.default.isAvailable {
-            runtime = AndroidRuntime(sdk: .default, runner: ProcessCommandRunner())
+            runtime = makeRuntime()
         }
+    }
+
+    private func makeRuntime() -> AndroidRuntime {
+        let runtime = AndroidRuntime(sdk: .default, runner: ProcessCommandRunner())
+        runtime.identity = identity
+        return runtime
+    }
+
+    /// Picks another real device and wipes the emulator's data, reinstalling its APKs (`AndroidRuntime.apply`).
+    func changeIdentity() async throws {
+        guard let runtime else { return }
+        let identity = AndroidIdentity.random()
+        try await runtime.apply(identity, resolution: resolution)
+        self.identity = identity
+    }
+
+    private var resolution: AndroidRuntime.Resolution {
+        UserDefaults.standard.string(forKey: "androidResolution").flatMap(AndroidRuntime.Resolution.init) ?? .hd1080
     }
 
     func start() {
@@ -32,7 +55,6 @@ final class AndroidSetup {
         // On with the SDK incomplete, e.g. after a failed or interrupted install: finishes it.
         guard let runtime else { return install() }
         // A failure here is retried when an Android app is opened.
-        let resolution = UserDefaults.standard.string(forKey: "androidResolution").flatMap(AndroidRuntime.Resolution.init) ?? .hd1080
         Task { try? await runtime.start(resolution: resolution) }
     }
 
@@ -58,7 +80,7 @@ final class AndroidSetup {
         Task {
             do {
                 try await installer.install()
-                runtime = AndroidRuntime(sdk: .default, runner: ProcessCommandRunner())
+                runtime = makeRuntime()
                 start()
             } catch {
                 Self.logger.error("Android install failed: \(error)")

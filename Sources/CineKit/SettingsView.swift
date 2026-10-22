@@ -43,6 +43,7 @@ struct SettingsView: View {
     @State private var confirmsRestore = false
     @State private var saveError: String?
     @State private var isInstalling = false
+    @State private var isChangingIdentity = false
     @AppStorage("androidResolution") private var androidResolution = AndroidRuntime.Resolution.hd1080
     @AppStorage("appTheme") private var theme = AppTheme.dark
     @FocusState private var hasKeyboardFocus: Bool
@@ -114,8 +115,8 @@ struct SettingsView: View {
             Task { try? await androidRuntime?.restart(resolution: resolution) }
         }
         .overlay {
-            if isInstalling {
-                ProgressView("Instalando…")
+            if isInstalling || isChangingIdentity {
+                ProgressView(isInstalling ? "Instalando…" : "Trocando identidade…")
                     .controlSize(.extraLarge)
                     .font(.title)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -164,7 +165,7 @@ struct SettingsView: View {
         }
     }
 
-    // Rows of the focus grid: back, theme, one per app, add/restore, Android on/off and resolution, remote.
+    // Rows of the focus grid: back, theme, one per app, add/restore, Android on/off, resolution and identity, remote.
     private static let backRow = 0
     private static let themeRow = 1
     private static let firstAppRow = 2
@@ -200,6 +201,13 @@ struct SettingsView: View {
                     androidResolution = resolution
                 }
             })
+            let identity = androidSetup.identity
+            rows.append([Control(
+                title: "Trocar identidade",
+                subtitle: identity.map { "\($0.model) · \($0.serial)" } ?? "Emulador padrão",
+                systemImage: "wand.and.stars",
+                action: changeIdentity
+            )])
         }
         if remoteServer.pairingURL != nil, remoteServer.state == .running {
             rows.append([Control(title: "Gerar novo código", systemImage: "qrcode") { remoteServer.regenerateToken() }])
@@ -325,6 +333,12 @@ struct SettingsView: View {
                             .frame(width: 200, alignment: .leading)
                         controls(rows, row: actionsRow + 2)
                     }
+                    HStack(spacing: 16) {
+                        Text("Identidade")
+                            .font(.title2)
+                            .frame(width: 200, alignment: .leading)
+                        controls(rows, row: actionsRow + 3)
+                    }
                 } else if androidSetup.runtime == nil {
                     Text(AndroidSetup.installMessage)
                         .font(.title2)
@@ -334,6 +348,19 @@ struct SettingsView: View {
                     Text("A instalação falhou: \(failure)")
                         .font(.title2)
                 }
+            }
+        }
+    }
+
+    private func changeIdentity() {
+        guard !isChangingIdentity else { return }
+        isChangingIdentity = true
+        Task {
+            defer { isChangingIdentity = false }
+            do {
+                try await androidSetup.changeIdentity()
+            } catch {
+                saveError = "Não foi possível trocar a identidade: \(error.localizedDescription)"
             }
         }
     }
