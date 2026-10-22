@@ -47,7 +47,7 @@ public final class AndroidRuntime {
     public func start(resolution: Resolution) async throws {
         if try await deviceState() == "device" { return }
         emulator = try runner.launch(sdk.emulator, [
-            "-avd", sdk.avdName, "-no-window", "-no-boot-anim",
+            "-avd", sdk.avdName, "-no-window", "-no-boot-anim", "-share-vid",
             "-skin", resolution.skin, "-prop", "qemu.sf.lcd_density=\(resolution.density)",
         ])
     }

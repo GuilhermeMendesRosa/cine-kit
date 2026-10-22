@@ -2,7 +2,7 @@ import CineKitCore
 import Foundation
 import Network
 
-/// Streams the emulator screen and injects keys through scrcpy-server v5.0.1 (ADR 0004).
+/// Injects keys and text through scrcpy-server v5.0.1 (ADR 0004); the video comes from the emulator (ADR 0009).
 /// Wire format: scrcpy `doc/develop.md` ("Protocol") at the pinned version.
 @MainActor
 final class ScrcpyClient {
@@ -14,16 +14,11 @@ final class ScrcpyClient {
         case serverUnreachable
     }
 
-    /// One H.264 packet in Annex B format; config packets carry SPS/PPS.
-    var onVideoPacket: ((Data, _ isConfig: Bool) -> Void)?
-
     private let sdk: AndroidSDK
     private let runner: CommandRunner
     private var server: RunningProcess?
     private var port: UInt16?
-    private var video: NWConnection?
     private var control: NWConnection?
-    private var reader: Task<Void, Never>?
 
     init(sdk: AndroidSDK, runner: CommandRunner) {
         self.sdk = sdk
@@ -39,7 +34,7 @@ final class ScrcpyClient {
         server = try runner.launch(sdk.adb, [
             "-s", AndroidRuntime.serial, "shell", "CLASSPATH=\(Self.remotePath)", "app_process", "/",
             "com.genymobile.scrcpy.Server", Self.version, "scid=\(scid)", "tunnel_forward=true",
-            "audio=false", "control=true", "video_codec=h264", "cleanup=true",
+            "video=false", "audio=false", "control=true", "cleanup=true",
         ])
 
         // With a forward tunnel, adb accepts the connection even before the server listens;
@@ -47,18 +42,14 @@ final class ScrcpyClient {
         for _ in 0..<50 {
             let connection = Self.connect(port)
             if (try? await Self.receive(connection, 1)) != nil {
-                video = connection
+                control = connection
                 break
             }
             connection.cancel()
             try await Task.sleep(for: .milliseconds(100))
         }
-        guard let video else { throw ClientError.serverUnreachable }
-        // The server accepts the control socket before sending any metadata.
-        control = Self.connect(port)
-        _ = try await Self.receive(video, 64) // device name
-        _ = try await Self.receive(video, 4) // codec id
-        reader = Task { [weak self] in await self?.readVideo(video) }
+        guard let control else { throw ClientError.serverUnreachable }
+        _ = try await Self.receive(control, 64) // device name
     }
 
     func send(_ message: ScrcpyControlMessage) {
@@ -66,8 +57,6 @@ final class ScrcpyClient {
     }
 
     func stop() {
-        reader?.cancel()
-        video?.cancel()
         control?.cancel()
         server?.terminate()
         if let port {
@@ -75,18 +64,6 @@ final class ScrcpyClient {
         }
         server = nil
         port = nil
-    }
-
-    private func readVideo(_ connection: NWConnection) async {
-        while !Task.isCancelled {
-            guard let header = try? await Self.receive(connection, 12) else { return }
-            // Session packets (MSB set) only announce the frame size.
-            if header[0] & 0x80 != 0 { continue }
-            let isConfig = header[0] & 0x40 != 0
-            let size = header[8..<12].reduce(0) { $0 << 8 | Int($1) }
-            guard size > 0, let packet = try? await Self.receive(connection, size) else { continue }
-            onVideoPacket?(packet, isConfig)
-        }
     }
 
     private func adb(_ arguments: String...) async throws -> String {

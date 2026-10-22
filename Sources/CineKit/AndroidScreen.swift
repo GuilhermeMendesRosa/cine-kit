@@ -2,7 +2,7 @@ import AppKit
 import CineKitCore
 import SwiftUI
 
-/// Shows only the Android app: the stream starts once the app is in the foreground, so the launcher never shows (ADR 0004).
+/// Shows only the Android app: the video starts once the app is in the foreground, so the launcher never shows (ADR 0004, 0009).
 struct AndroidScreen: View {
     private enum Phase {
         case opening, playing, failed
@@ -16,7 +16,7 @@ struct AndroidScreen: View {
 
     @Environment(AndroidRuntime.self) private var runtime: AndroidRuntime?
     @State private var phase = Phase.opening
-    @State private var renderer = H264Renderer()
+    @State private var frames: EmulatorFrameSource?
     @State private var client: ScrcpyClient?
     @State private var keyMonitor: Any?
     @AppStorage("androidResolution") private var resolution = AndroidRuntime.Resolution.hd1080
@@ -34,8 +34,10 @@ struct AndroidScreen: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(.black)
             case .playing:
-                ScrcpyVideoView(renderer: renderer)
-                    .ignoresSafeArea()
+                if let frames {
+                    EmulatorFrameView(source: frames)
+                        .ignoresSafeArea()
+                }
             case .failed:
                 VStack(spacing: 24) {
                     Image(systemName: "exclamationmark.triangle")
@@ -71,9 +73,9 @@ struct AndroidScreen: View {
             }
             try Task.checkCancellation()
             let client = ScrcpyClient(sdk: .default, runner: ProcessCommandRunner())
-            client.onVideoPacket = { renderer.enqueue($0, isConfig: $1) }
             self.client = client
             try await client.start()
+            frames = try EmulatorFrameSource()
             try Task.checkCancellation()
             phase = .playing
             // Back on the app's root screen closes it: return home without streaming the launcher.
