@@ -1,13 +1,22 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { pointer, press, type Button, type PressResult } from './api'
+import { fetchState, pointer, press, type Button, type PressResult } from './api'
+import { createClickSound } from './clickSound'
 import { haptic } from './haptics'
-import { startHold, startLongPress } from './holdRepeat'
+import { startHold } from './holdRepeat'
 import { clearToken, resolveToken } from './pairing'
 import { createPointerQueue } from './pointerQueue'
 import { Touchpad } from './Touchpad'
 import './App.css'
 
 const repeating = new Set<Button>(['up', 'down', 'left', 'right', 'volumeUp', 'volumeDown'])
+const stateIntervalMs = 1500
+const clickSound = createClickSound()
+
+/** The tick of each press: vibration where the phone allows it, and the click sound unless the open app turned it off. */
+function feedback() {
+  haptic()
+  clickSound.play()
+}
 
 export default function App() {
   const [token, setToken] = useState(() => resolveToken(new URL(location.href), localStorage))
@@ -28,6 +37,24 @@ export default function App() {
     handleResult(await press(button, { token }))
   }
 
+  // The open app may turn the click sound off (ADR 0015); offline keeps the last value.
+  useEffect(() => {
+    if (!token) return
+    async function refresh() {
+      if (document.visibilityState !== 'visible') return
+      const state = await fetchState({ token: token! })
+      if (state === 'unauthorized') handleResult(state)
+      else if (state !== 'offline') clickSound.enabled = state.clickSound
+    }
+    void refresh()
+    const interval = setInterval(refresh, stateIntervalMs)
+    document.addEventListener('visibilitychange', refresh)
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', refresh)
+    }
+  }, [token])
+
   const queue = useMemo(
     () => token ? createPointerQueue((event) => pointer(event, { token }), handleResult) : null,
     [token],
@@ -45,7 +72,30 @@ export default function App() {
   return (
     <main className="remote">
       <p className="status" aria-live="polite">{offline ? 'Mac não encontrado' : ''}</p>
-      <Touchpad queue={queue} />
+      <div className="top">
+        <div className="top-row">
+          <div className="volume glass">
+            <Key button="volumeDown" label="Diminuir volume" onPress={send}><VolumeIcon sign="−" /></Key>
+            <Key button="volumeUp" label="Aumentar volume" onPress={send}><VolumeIcon sign="+" /></Key>
+          </div>
+          <Key button="home" label="Início" onPress={send}><HomeIcon /></Key>
+        </div>
+        <div className="actions">
+          <Key button="back" label="Voltar" onPress={send}><BackIcon /></Key>
+          <button
+            type="button"
+            className="key key-click glass"
+            aria-label="Clique"
+            onPointerDown={() => {
+              feedback()
+              queue.click()
+            }}
+          >
+            <ClickIcon />
+          </button>
+          <Key button="playPause" label="Pause" onPress={send}><PlayPauseIcon /></Key>
+        </div>
+      </div>
       <div className="dpad glass">
         <Key button="up" label="Cima" onPress={send}><Chevron rotate={0} /></Key>
         <Key button="left" label="Esquerda" onPress={send}><Chevron rotate={-90} /></Key>
@@ -53,34 +103,13 @@ export default function App() {
         <Key button="right" label="Direita" onPress={send}><Chevron rotate={90} /></Key>
         <Key button="down" label="Baixo" onPress={send}><Chevron rotate={180} /></Key>
       </div>
-      <div className="actions">
-        <Key button="back" longPress="home" label="Voltar; segure para o início" onPress={send}><BackIcon /></Key>
-        <button
-          type="button"
-          className="key key-click glass"
-          aria-label="Clique"
-          onPointerDown={() => {
-            haptic()
-            queue.click()
-          }}
-        >
-          <ClickIcon />
-        </button>
-        <Key button="playPause" label="Pause" onPress={send}><PlayPauseIcon /></Key>
-        <span className="hint" aria-hidden="true">segure: início</span>
-      </div>
-      <div className="volume glass">
-        <Key button="volumeDown" label="Diminuir volume" onPress={send}><VolumeIcon sign="−" /></Key>
-        <Key button="volumeUp" label="Aumentar volume" onPress={send}><VolumeIcon sign="+" /></Key>
-      </div>
+      <Touchpad queue={queue} onTap={feedback} />
     </main>
   )
 }
 
-function Key({ button, longPress, label, onPress, children }: {
+function Key({ button, label, onPress, children }: {
   button: Button
-  /** Sent instead of `button` when held for 600 ms. */
-  longPress?: Button
   label: string
   onPress: (button: Button) => void
   children: ReactNode
@@ -101,10 +130,8 @@ function Key({ button, longPress, label, onPress, children }: {
       aria-label={label}
       onPointerDown={() => {
         release()
-        haptic()
-        if (longPress) {
-          stop.current = startLongPress(() => onPress(button), () => onPress(longPress))
-        } else if (repeating.has(button)) {
+        feedback()
+        if (repeating.has(button)) {
           stop.current = startHold(() => onPress(button))
         } else {
           onPress(button)
@@ -137,6 +164,10 @@ function Chevron({ rotate }: { rotate: number }) {
 
 function BackIcon() {
   return <Icon><path d="M9 14 4 9l5-5" /><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" /></Icon>
+}
+
+function HomeIcon() {
+  return <Icon><path d="M3 11 12 3.5 21 11" /><path d="M5.5 9v11h13V9" /></Icon>
 }
 
 function ClickIcon() {

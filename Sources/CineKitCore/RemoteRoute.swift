@@ -43,13 +43,21 @@ public enum RemoteRoute {
         let button: String
     }
 
-    /// `staticFile` reads a file of the web app by its path relative to the app's folder.
-    public static func response(for request: RemoteHTTPRequest, token: String, staticFile: (String) -> Data?) -> RemoteResponse {
+    /// `clickSound` is the remote's click sound for the open app (ADR 0015). `staticFile` reads a file of the web app
+    /// by its path relative to the app's folder.
+    public static func response(
+        for request: RemoteHTTPRequest, token: String, clickSound: Bool, staticFile: (String) -> Data?
+    ) -> RemoteResponse {
         if request.path == "/api/press", request.method == "POST" {
             return press(request, token: token)
         }
         if request.path == "/api/pointer", request.method == "POST" {
             return pointer(request, token: token)
+        }
+        if request.path == "/api/state", request.method == "GET" {
+            guard authorized(request, token: token) else { return RemoteResponse(status: 401) }
+            let body = (try? JSONEncoder().encode(["clickSound": clickSound])) ?? Data()
+            return RemoteResponse(status: 200, headers: ["Content-Type": "application/json"], body: body)
         }
         guard request.method == "GET", !request.path.hasPrefix("/api/") else { return RemoteResponse(status: 404) }
         let path = request.path == "/" ? "index.html" : String(request.path.dropFirst())

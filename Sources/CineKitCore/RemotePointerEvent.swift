@@ -5,10 +5,12 @@ public enum RemotePointerEvent: Equatable, Sendable, Decodable {
 
     case move(dx: Double, dy: Double)
     case scroll(dx: Double, dy: Double)
+    /// A point of the screen as a fraction 0...1 of its width and height, from the top left (ADR 0015).
+    case moveTo(x: Double, y: Double)
     case click
 
     private enum CodingKeys: String, CodingKey {
-        case type, dx, dy
+        case type, dx, dy, x, y
     }
 
     public init(from decoder: Decoder) throws {
@@ -16,6 +18,15 @@ public enum RemotePointerEvent: Equatable, Sendable, Decodable {
         let type = try container.decode(String.self, forKey: .type)
         if type == "click" {
             self = .click
+            return
+        }
+        if type == "moveTo" {
+            let x = try container.decode(Double.self, forKey: .x)
+            let y = try container.decode(Double.self, forKey: .y)
+            guard [x, y].allSatisfy({ $0.isFinite && (0...1).contains($0) }) else {
+                throw DecodingError.dataCorruptedError(forKey: .x, in: container, debugDescription: "Point out of range")
+            }
+            self = .moveTo(x: x, y: y)
             return
         }
         let dx = try container.decode(Double.self, forKey: .dx)

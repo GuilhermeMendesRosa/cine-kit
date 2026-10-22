@@ -8,9 +8,9 @@ struct RemoteRouteTests {
         "assets/app.js": Data("js".utf8),
     ]
 
-    private func respond(_ raw: String) throws -> RemoteResponse {
+    private func respond(_ raw: String, clickSound: Bool = true) throws -> RemoteResponse {
         let request = try #require(RemoteHTTPRequest.parse(Data(raw.utf8)))
-        return RemoteRoute.response(for: request, token: "secret") { files[$0] }
+        return RemoteRoute.response(for: request, token: "secret", clickSound: clickSound) { files[$0] }
     }
 
     private func press(_ body: String, authorization: String? = "Bearer secret") throws -> RemoteResponse {
@@ -65,7 +65,7 @@ struct RemoteRouteTests {
     @Test func rejectsPathTraversal() throws {
         let request = try #require(RemoteHTTPRequest.parse(Data("GET /../secret.txt HTTP/1.1\r\n\r\n".utf8)))
         var asked = false
-        let response = RemoteRoute.response(for: request, token: "secret") { _ in
+        let response = RemoteRoute.response(for: request, token: "secret", clickSound: true) { _ in
             asked = true
             return Data()
         }
@@ -78,6 +78,31 @@ struct RemoteRouteTests {
         #expect(response.status == 204)
         #expect(response.pointer == .move(dx: 12.5, dy: -3))
         #expect(response.button == nil)
+    }
+
+    @Test func pointerMoveToReturns204AndEvent() throws {
+        let response = try pointer(#"{"type":"moveTo","x":0.25,"y":1}"#)
+        #expect(response.status == 204)
+        #expect(response.pointer == .moveTo(x: 0.25, y: 1))
+    }
+
+    @Test func moveToOutOfRangeIs400() throws {
+        #expect(try pointer(#"{"type":"moveTo","x":-0.01,"y":0.5}"#).status == 400)
+        #expect(try pointer(#"{"type":"moveTo","x":0.5,"y":1.01}"#).status == 400)
+        #expect(try pointer(#"{"type":"moveTo","x":1e999,"y":0.5}"#).status == 400)
+        #expect(try pointer(#"{"type":"moveTo","x":0.5}"#).status == 400)
+    }
+
+    @Test func stateReturnsClickSound() throws {
+        let response = try respond("GET /api/state HTTP/1.1\r\nAuthorization: Bearer secret\r\n\r\n", clickSound: false)
+        #expect(response.status == 200)
+        #expect(response.headers["Content-Type"] == "application/json")
+        #expect(response.body == Data(#"{"clickSound":false}"#.utf8))
+    }
+
+    @Test func stateWithoutTokenIs401() throws {
+        #expect(try respond("GET /api/state HTTP/1.1\r\n\r\n").status == 401)
+        #expect(try respond("GET /api/state HTTP/1.1\r\nAuthorization: Bearer wrong\r\n\r\n").status == 401)
     }
 
     @Test func pointerClickReturns204() throws {

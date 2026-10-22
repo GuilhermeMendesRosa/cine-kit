@@ -15,39 +15,39 @@ describe('createPointerQueue', () => {
   it('keeps one request in flight', () => {
     const { send } = pendingSend()
     const queue = createPointerQueue(send, () => {})
-    queue.move(1, 1)
+    queue.moveTo(0.1, 0.1)
     queue.scroll(0, 5)
     queue.click()
     expect(send).toHaveBeenCalledTimes(1)
   })
 
-  it('coalesces moves while waiting', async () => {
+  it('keeps only the latest position while waiting', async () => {
     const { send, finish } = pendingSend()
     const queue = createPointerQueue(send, () => {})
-    queue.move(1, 1)
-    queue.move(1, 2)
-    queue.move(3, 4)
+    queue.moveTo(0.1, 0.1)
+    queue.moveTo(0.2, 0.3)
+    queue.moveTo(0.5, 0.75)
     finish()
     await settle()
     expect(send.mock.calls.map(([event]) => event)).toEqual([
-      { type: 'move', dx: 1, dy: 1 },
-      { type: 'move', dx: 4, dy: 6 },
+      { type: 'moveTo', x: 0.1, y: 0.1 },
+      { type: 'moveTo', x: 0.5, y: 0.75 },
     ])
   })
 
-  it('sends pending move before click', async () => {
+  it('click goes after the pending position', async () => {
     const { send, finish } = pendingSend()
     const queue = createPointerQueue(send, () => {})
     queue.scroll(0, 10)
     queue.click()
-    queue.move(5, 5)
+    queue.moveTo(0.5, 0.5)
     finish()
     await settle()
     finish()
     await settle()
     expect(send.mock.calls.map(([event]) => event)).toEqual([
       { type: 'scroll', dx: 0, dy: 10 },
-      { type: 'move', dx: 5, dy: 5 },
+      { type: 'moveTo', x: 0.5, y: 0.5 },
       { type: 'click' },
     ])
   })

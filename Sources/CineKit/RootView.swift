@@ -8,6 +8,7 @@ struct RootView: View {
 
     @Environment(AppCatalogStore.self) private var store
     @Environment(WebViewCache.self) private var webViewCache
+    @Environment(RemoteServer.self) private var remoteServer
     @State private var openApp: StreamingApp?
     @State private var isShowingSettings = false
     @State private var loadError: String?
@@ -66,6 +67,8 @@ struct RootView: View {
         }
         // The app's appearance also reaches sheets, alerts and panels.
         .onChange(of: theme, initial: true) { NSApp.appearance = $1.appearance }
+        // The home and the settings always click.
+        .onChange(of: openApp, initial: true) { remoteServer.clickSound = $1?.remoteClickSound ?? true }
     }
 
     private func closeSettings() {

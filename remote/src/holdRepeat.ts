@@ -14,17 +14,3 @@ export function startHold(fire: () => void): () => void {
     clearInterval(interval)
   }
 }
-
-/** Fires `onLong` once the button is held for `delayMs`, or `onShort` when released before. Returns `release`. */
-export function startLongPress(onShort: () => void, onLong: () => void, delayMs = 600): () => void {
-  let fired = false
-  const delay = setTimeout(() => {
-    fired = true
-    onLong()
-  }, delayMs)
-  return () => {
-    clearTimeout(delay)
-    if (!fired) onShort()
-    fired = true
-  }
-}

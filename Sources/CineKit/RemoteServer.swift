@@ -33,6 +33,8 @@ final class RemoteServer {
 
     private(set) var state = State.running
     private(set) var token: String
+    /// The open app's click sound setting, for `GET /api/state` (ADR 0015).
+    var clickSound = true
     @ObservationIgnored private var listener: NWListener?
 
     init() {
@@ -108,7 +110,7 @@ final class RemoteServer {
 
     private func respond(to request: RemoteHTTPRequest) -> RemoteResponse {
         let folder = Bundle.main.resourceURL?.appending(path: "remote")
-        let response = RemoteRoute.response(for: request, token: token) { path in
+        let response = RemoteRoute.response(for: request, token: token, clickSound: clickSound) { path in
             folder.flatMap { try? Data(contentsOf: $0.appending(path: path)) }
         }
         if response.status == 400 {

@@ -14,6 +14,7 @@ struct AppFormSheet: View {
     @State private var name: String
     @State private var link: String
     @State private var imageFileName: String?
+    @State private var remoteClickSound: Bool
     @State private var imageError: String?
 
     init(app: StreamingApp?, onSave: @escaping (StreamingApp) -> Void) {
@@ -22,6 +23,7 @@ struct AppFormSheet: View {
         _name = State(initialValue: app?.name ?? "")
         _link = State(initialValue: app?.url.absoluteString ?? "")
         _imageFileName = State(initialValue: app?.imageFileName)
+        _remoteClickSound = State(initialValue: app?.remoteClickSound ?? true)
     }
 
     private var validation: Result<ValidatedApp, AppDraftError> {
@@ -59,6 +61,7 @@ struct AppFormSheet: View {
                 }
                 Button("Escolher foto…", action: chooseImage)
             }
+            Toggle("Som de clique no controle", isOn: $remoteClickSound)
             if let message = validationMessage ?? imageError {
                 Text(message)
                     .foregroundStyle(.red)
@@ -94,6 +97,7 @@ struct AppFormSheet: View {
         if var saved = app, isAndroid {
             saved.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
             saved.imageFileName = imageFileName
+            saved.remoteClickSound = remoteClickSound
             onSave(saved)
             dismiss()
             return
@@ -109,6 +113,7 @@ struct AppFormSheet: View {
         saved.name = validated.name
         saved.url = validated.url
         saved.imageFileName = imageFileName
+        saved.remoteClickSound = remoteClickSound
         onSave(saved)
         dismiss()
     }

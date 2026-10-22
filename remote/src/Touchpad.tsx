@@ -1,49 +1,65 @@
-import { useMemo, type ReactNode } from 'react'
-import { haptic } from './haptics'
+import { useEffect, useMemo, useState, type PointerEvent } from 'react'
 import type { PointerQueue } from './pointerQueue'
+import { createScrollStick } from './scrollStick'
 import { createTouchpadGesture } from './touchpadGesture'
 
-/** The Mac's mouse: the panel moves and clicks, the strip on its right edge scrolls (ADR 0012). */
-export function Touchpad({ queue }: { queue: PointerQueue }) {
-  return (
-    <div className="touchpad glass">
-      <Surface className="touchpad-area" label="Touchpad" queue={queue} />
-      <Surface className="touchpad-strip" label="Rolagem" queue={queue} scrollOnly>
-        <span className="grip" />
-      </Surface>
-    </div>
-  )
-}
+const gripHalfHeight = 28
 
-function Surface({ className, label, queue, scrollOnly = false, children }: {
-  className: string
-  label: string
-  queue: PointerQueue
-  scrollOnly?: boolean
-  children?: ReactNode
-}) {
+/** The Mac's mouse: the 16:9 area is the screen in miniature, the strip on its right scrolls like a stick (ADR 0015). */
+export function Touchpad({ queue, onTap }: { queue: PointerQueue; onTap: () => void }) {
   const gesture = useMemo(() => createTouchpadGesture({
-    onMove: queue.move,
-    onScroll: queue.scroll,
+    onPosition: queue.moveTo,
     onClick: () => {
-      haptic()
+      onTap()
       queue.click()
     },
-  }, { scrollOnly }), [queue, scrollOnly])
+  }), [queue, onTap])
+  const stick = useMemo(() => createScrollStick({ onScroll: queue.scroll }), [queue])
+  const [grip, setGrip] = useState<number | null>(null)
+
+  useEffect(() => stick.release, [stick])
+
+  function hold(event: PointerEvent<HTMLDivElement>) {
+    const rect = event.currentTarget.getBoundingClientRect()
+    const reach = rect.height / 2 - gripHalfHeight
+    const offset = Math.min(1, Math.max(-1, (event.clientY - (rect.top + rect.height / 2)) / reach))
+    stick.hold(offset, event.timeStamp)
+    setGrip(offset * reach)
+  }
+
+  function release() {
+    stick.release()
+    setGrip(null)
+  }
 
   return (
-    <div
-      className={className}
-      aria-label={label}
-      onPointerDown={(event) => {
-        event.currentTarget.setPointerCapture(event.pointerId)
-        gesture.down(event.pointerId, event.clientX, event.clientY, event.timeStamp)
-      }}
-      onPointerMove={(event) => gesture.move(event.pointerId, event.clientX, event.clientY, event.timeStamp)}
-      onPointerUp={(event) => gesture.up(event.pointerId, event.timeStamp)}
-      onPointerCancel={(event) => gesture.cancel(event.pointerId)}
-    >
-      {children}
+    <div className="touchpad glass">
+      <div
+        className="touchpad-area"
+        aria-label="Touchpad"
+        onPointerDown={(event) => {
+          event.currentTarget.setPointerCapture(event.pointerId)
+          gesture.down(event.pointerId, event.clientX, event.clientY, event.timeStamp, event.currentTarget.getBoundingClientRect())
+        }}
+        onPointerMove={(event) => gesture.move(
+          event.pointerId, event.clientX, event.clientY, event.timeStamp, event.currentTarget.getBoundingClientRect(),
+        )}
+        onPointerUp={(event) => gesture.up(event.pointerId, event.timeStamp)}
+        onPointerCancel={(event) => gesture.cancel(event.pointerId)}
+      />
+      <div
+        className="touchpad-strip"
+        aria-label="Rolagem"
+        onPointerDown={(event) => {
+          event.currentTarget.setPointerCapture(event.pointerId)
+          hold(event)
+        }}
+        onPointerMove={(event) => { if (grip !== null) hold(event) }}
+        onPointerUp={release}
+        onPointerCancel={release}
+      >
+        <span className={grip === null ? 'grip' : 'grip held'} style={{ transform: `translateY(${grip ?? 0}px)` }} />
+      </div>
     </div>
   )
 }
