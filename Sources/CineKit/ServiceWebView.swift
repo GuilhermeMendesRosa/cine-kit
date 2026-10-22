@@ -14,7 +14,12 @@ struct ServiceWebView: NSViewRepresentable {
     func makeNSView(context: Context) -> WKWebView {
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = .default()
-        let webView = WKWebView(frame: .zero, configuration: configuration)
+        let scriptURL = Bundle.module.url(forResource: "spatial-navigation", withExtension: "js")!
+        let script = try! String(contentsOf: scriptURL, encoding: .utf8)
+        configuration.userContentController.addUserScript(
+            WKUserScript(source: script, injectionTime: .atDocumentStart, forMainFrameOnly: true)
+        )
+        let webView = FocusingWebView(frame: .zero, configuration: configuration)
         webView.customUserAgent = Self.safariUserAgent
         webView.navigationDelegate = context.coordinator
         webView.load(URLRequest(url: url))
@@ -44,5 +49,13 @@ struct ServiceWebView: NSViewRepresentable {
             guard (error as NSError).code != NSURLErrorCancelled else { return }
             onFailure()
         }
+    }
+}
+
+// The home leaves the screen and keyboard focus does not reach the web view on its own.
+private final class FocusingWebView: WKWebView {
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        window?.makeFirstResponder(self)
     }
 }
