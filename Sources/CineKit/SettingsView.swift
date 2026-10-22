@@ -30,12 +30,14 @@ struct SettingsView: View {
         var action: () -> Void
     }
 
+    let onClose: () -> Void
+
     @Environment(AppCatalogStore.self) private var store
     @Environment(AndroidRuntime.self) private var androidRuntime: AndroidRuntime?
     @Environment(RemoteServer.self) private var remoteServer
     @Environment(InputMode.self) private var inputMode
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var focus = SettingsFocusTarget(row: 0, column: 0)
+    @State private var focus = SettingsFocusTarget(row: Self.themeRow, column: 0)
     @State private var formTarget: FormTarget?
     @State private var pendingRemoval: StreamingApp?
     @State private var confirmsRestore = false
@@ -50,8 +52,11 @@ struct SettingsView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 56) {
-                    Text("Configurações")
-                        .font(.largeTitle.bold())
+                    HStack(spacing: 32) {
+                        controls(rows, row: Self.backRow)
+                        Text("Configurações")
+                            .font(.largeTitle.bold())
+                    }
                     section("Aparência") {
                         HStack(spacing: 16) {
                             Text("Tema")
@@ -166,15 +171,19 @@ struct SettingsView: View {
         }
     }
 
-    // Rows of the focus grid: theme, one per app, add/restore, Android resolution (with the runtime), remote.
-    private static let themeRow = 0
-    private static let firstAppRow = 1
+    // Rows of the focus grid: back, theme, one per app, add/restore, Android resolution (with the runtime), remote.
+    private static let backRow = 0
+    private static let themeRow = 1
+    private static let firstAppRow = 2
     private var actionsRow: Int { Self.firstAppRow + store.apps.count }
 
     private var rows: [[Control]] {
-        var rows = [AppTheme.allCases.map { option in
-            Control(title: option.title, isSelected: theme == option) { theme = option }
-        }]
+        var rows = [
+            [Control(title: "Voltar", systemImage: "chevron.left", action: onClose)],
+            AppTheme.allCases.map { option in
+                Control(title: option.title, isSelected: theme == option) { theme = option }
+            },
+        ]
         rows += store.apps.map(appControls)
         var actions = [Control(title: "Adicionar app", systemImage: "plus", shortcut: KeyboardShortcut("n")) { formTarget = .new }]
         if let androidRuntime {

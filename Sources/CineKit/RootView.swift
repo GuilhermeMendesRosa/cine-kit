@@ -27,7 +27,7 @@ struct RootView: View {
                 // Media screens stay dark whatever the theme (ADR 0013).
                 .environment(\.colorScheme, .dark)
             } else if isShowingSettings {
-                SettingsView()
+                SettingsView(onClose: closeSettings)
             } else {
                 HomeView(apps: store.apps, focus: $shelfFocus, onOpen: { openApp = $0 }, onOpenSettings: { isShowingSettings = true })
             }
