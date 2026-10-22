@@ -5,6 +5,7 @@ struct ServiceScreen: View {
     let app: StreamingApp
     let onExit: () -> Void
     @State private var failed = false
+    @Environment(WebViewCache.self) private var cache
 
     var body: some View {
         if failed {
@@ -20,7 +21,7 @@ struct ServiceScreen: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(.black)
         } else {
-            ServiceWebView(url: app.url, onExit: onExit) { failed = true }
+            ServiceWebView(app: app, onExit: onExit) { cache.discard(app.id); failed = true }
                 .ignoresSafeArea()
         }
     }

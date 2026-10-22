@@ -5,35 +5,47 @@ import WebKit
 struct ServiceWebView: NSViewRepresentable {
     static let safariUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15"
 
-    let url: URL
+    let app: StreamingApp
     let onExit: () -> Void
     let onFailure: () -> Void
+    @Environment(WebViewCache.self) private var cache
 
     func makeCoordinator() -> Coordinator {
         Coordinator(onFailure: onFailure)
     }
 
     func makeNSView(context: Context) -> WKWebView {
-        let profile = WebProfile.for(url)
-        let configuration = WKWebViewConfiguration()
-        configuration.websiteDataStore = .default()
-        if profile.usesSpatialNavigation {
-            let scriptURL = Bundle.module.url(forResource: "spatial-navigation", withExtension: "js")!
-            let script = try! String(contentsOf: scriptURL, encoding: .utf8)
-            configuration.userContentController.addUserScript(
-                WKUserScript(source: script, injectionTime: .atDocumentStart, forMainFrameOnly: true)
-            )
+        let profile = WebProfile.for(app.url)
+        let webView = cache.webView(for: app) {
+            let configuration = WKWebViewConfiguration()
+            configuration.websiteDataStore = .default()
+            if profile.usesSpatialNavigation {
+                let scriptURL = Bundle.module.url(forResource: "spatial-navigation", withExtension: "js")!
+                let script = try! String(contentsOf: scriptURL, encoding: .utf8)
+                configuration.userContentController.addUserScript(
+                    WKUserScript(source: script, injectionTime: .atDocumentStart, forMainFrameOnly: true)
+                )
+            }
+            let webView = FocusingWebView(frame: .zero, configuration: configuration)
+            webView.customUserAgent = profile.userAgent ?? Self.safariUserAgent
+            webView.load(URLRequest(url: profile.url))
+            return webView
         }
-        let webView = FocusingWebView(frame: .zero, configuration: configuration)
-        webView.onExit = onExit
-        webView.handlesBack = profile.handlesBack
-        webView.customUserAgent = profile.userAgent ?? Self.safariUserAgent
+        // A cached page outlives the representable and coordinator of its last visit (ADR 0014).
+        if let webView = webView as? FocusingWebView {
+            webView.onExit = onExit
+            webView.handlesBack = profile.handlesBack
+        }
         webView.navigationDelegate = context.coordinator
-        webView.load(URLRequest(url: profile.url))
         return webView
     }
 
     func updateNSView(_ webView: WKWebView, context: Context) {}
+
+    // Every way out ends here; the page stays cached, paused (ADR 0014).
+    static func dismantleNSView(_ webView: WKWebView, coordinator: Coordinator) {
+        webView.pauseAllMediaPlayback(completionHandler: nil)
+    }
 
     @MainActor
     final class Coordinator: NSObject, WKNavigationDelegate {
@@ -87,7 +99,7 @@ private final class FocusingWebView: WKWebView {
     /// Esc is Back on release; holding it (first auto-repeat) goes home from anywhere (ADR 0012).
     private func handleEscape(_ event: NSEvent) {
         if event.type == .keyDown {
-            if event.isARepeat { onExit() }
+            if event.isARepeat { leave() }
             return
         }
         switch WebBack.action(isFullscreen: fullscreenState == .inFullscreen, handlesBack: handlesBack, canGoBack: canGoBack) {
@@ -105,6 +117,15 @@ private final class FocusingWebView: WKWebView {
         case .goBack:
             goBack()
         case .exit:
+            leave()
+        }
+    }
+
+    // Taking the page out of WebKit's fullscreen window is not reliable, so fullscreen ends first (ADR 0014).
+    private func leave() {
+        if fullscreenState == .inFullscreen {
+            evaluateJavaScript("document.exitFullscreen()") { [weak self] _, _ in self?.onExit() }
+        } else {
             onExit()
         }
     }
@@ -114,7 +135,7 @@ private final class FocusingWebView: WKWebView {
         guard event.modifierFlags.contains(.command), event.keyCode == Self.leftBracketKeyCode else {
             return super.performKeyEquivalent(with: event)
         }
-        if canGoBack { goBack() } else { onExit() }
+        if canGoBack { goBack() } else { leave() }
         return true
     }
 }

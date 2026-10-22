@@ -7,6 +7,7 @@ struct RootView: View {
     private static let escapeKeyCode: UInt16 = 53
 
     @Environment(AppCatalogStore.self) private var store
+    @Environment(WebViewCache.self) private var webViewCache
     @State private var openApp: StreamingApp?
     @State private var isShowingSettings = false
     @State private var loadError: String?
@@ -32,6 +33,7 @@ struct RootView: View {
                 HomeView(apps: store.apps, focus: $shelfFocus, onOpen: { openApp = $0 }, onOpenSettings: { isShowingSettings = true })
             }
         }
+        .onChange(of: store.apps) { _, apps in webViewCache.discardStale(apps) }
         .alert("Não foi possível carregar os apps", isPresented: .constant(loadError != nil)) {
             Button("OK") { loadError = nil }
         } message: {

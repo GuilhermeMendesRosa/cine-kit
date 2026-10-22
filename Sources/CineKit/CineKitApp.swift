@@ -14,6 +14,7 @@ struct CineKitApp: App {
                 .environment(appDelegate.androidRuntime)
                 .environment(appDelegate.remoteServer)
                 .environment(appDelegate.inputMode)
+                .environment(appDelegate.webViewCache)
         }
     }
 }
@@ -24,6 +25,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let androidRuntime = AndroidSDK.default.isAvailable ? AndroidRuntime(sdk: .default, runner: ProcessCommandRunner()) : nil
     let remoteServer = RemoteServer()
     let inputMode = InputMode()
+    let webViewCache = WebViewCache()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.activate()
