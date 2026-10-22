@@ -1,6 +1,6 @@
 <p align="center"><img src="assets/AppIcon.png" width="160" alt="Ícone do cine-kit"></p>
 
-<h1 align="center">cine-kit</h1>
+<h1 align="center">CineKit</h1>
 
 <p align="center">Transforma o Mac numa TV box: interface de sala em tela cheia, controle remoto pelo celular e apps Android.</p>
 
