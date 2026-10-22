@@ -28,7 +28,9 @@ final class AndroidSetup {
     }
 
     func start() {
-        guard isEnabled, let runtime else { return }
+        guard isEnabled else { return }
+        // On with the SDK incomplete, e.g. after a failed or interrupted install: finishes it.
+        guard let runtime else { return install() }
         // A failure here is retried when an Android app is opened.
         let resolution = UserDefaults.standard.string(forKey: "androidResolution").flatMap(AndroidRuntime.Resolution.init) ?? .hd1080
         Task { try? await runtime.start(resolution: resolution) }
