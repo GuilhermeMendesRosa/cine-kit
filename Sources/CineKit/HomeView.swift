@@ -20,25 +20,24 @@ struct HomeView: View {
                         .monospacedDigit()
                 }
                 Spacer()
-                GlassEffectContainer {
-                    let isFocused = focus.target == .settings
-                    let shape = RoundedRectangle(cornerRadius: 20)
-                    Button(action: onOpenSettings) {
-                        Image(systemName: "gearshape.fill")
-                            .font(.largeTitle)
-                            .foregroundStyle(isFocused ? .black : .primary)
-                            .padding(24)
-                            .contentShape(shape)
-                    }
-                    .buttonStyle(.plain)
-                    // A solid white plate, lift and shadow make the focus obvious over any background tint, as on tvOS.
-                    .background { if isFocused { shape.fill(.white) } }
-                    .glassEffect(isFocused ? .identity : .regular.interactive(), in: shape)
-                    .shadow(color: .black.opacity(isFocused ? 0.35 : 0), radius: 20, y: 12)
-                    .scaleEffect(isFocused && !reduceMotion ? 1.1 : 1)
-                    .animation(reduceMotion ? nil : .spring(duration: 0.25), value: isFocused)
-                    .onHover { if $0, inputMode.kind == .pointer { focus.target = .settings } }
+                let isFocused = focus.target == .settings
+                let shape = RoundedRectangle(cornerRadius: 20)
+                Button(action: onOpenSettings) {
+                    Image(systemName: "gearshape.fill")
+                        .font(.largeTitle)
+                        .foregroundStyle(isFocused ? .black : .primary)
+                        .padding(24)
+                        .contentShape(shape)
                 }
+                .buttonStyle(.plain)
+                // A solid white plate, lift and shadow make the focus obvious over any background tint, as on tvOS.
+                // The plate fades over a glass that never changes: morphing or interactive glass slides sideways.
+                .background(shape.fill(.white).opacity(isFocused ? 1 : 0))
+                .glassEffect(.regular, in: shape)
+                .shadow(color: .black.opacity(isFocused ? 0.35 : 0), radius: 20, y: 12)
+                .scaleEffect(isFocused && !reduceMotion ? 1.1 : 1)
+                .animation(reduceMotion ? nil : .spring(duration: 0.25), value: isFocused)
+                .onHover { if $0, inputMode.kind == .pointer { focus.target = .settings } }
             }
             .padding(.horizontal, 80)
 
