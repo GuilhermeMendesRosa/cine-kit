@@ -5,6 +5,7 @@ struct HomeView: View {
     let apps: [StreamingApp]
     @Binding var focus: ShelfFocusState
     let onOpen: (StreamingApp) -> Void
+    let onOpenSettings: () -> Void
 
     @FocusState private var hasKeyboardFocus: Bool
 
@@ -17,13 +18,12 @@ struct HomeView: View {
             HStack {
                 Spacer()
                 GlassEffectContainer {
-                    Button {} label: {
+                    Button(action: onOpenSettings) {
                         Image(systemName: "gearshape.fill")
                             .font(.largeTitle)
                             .padding(16)
                     }
                     .buttonStyle(.glass(focus.target == .settings ? .regular.tint(.accentColor) : .regular))
-                    .disabled(true)
                 }
             }
             .padding(.horizontal, 80)
@@ -55,7 +55,10 @@ struct HomeView: View {
             focus = ShelfFocus.move(focus, direction: MoveDirection(command), itemCount: apps.count)
         }
         .onKeyPress(.return) {
-            guard case .card(let index) = focus.target else { return .ignored }
+            guard case .card(let index) = focus.target else {
+                onOpenSettings()
+                return .handled
+            }
             onOpen(apps[index])
             return .handled
         }

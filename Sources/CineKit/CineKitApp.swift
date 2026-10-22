@@ -1,13 +1,16 @@
 import AppKit
+import CineKitCore
 import SwiftUI
 
 @main
 struct CineKitApp: App {
     @NSApplicationDelegateAdaptor private var appDelegate: AppDelegate
+    @State private var store = AppCatalogStore(directory: .applicationSupportDirectory.appending(path: "CineKit"))
 
     var body: some Scene {
         WindowGroup {
             RootView()
+                .environment(store)
                 .preferredColorScheme(.dark)
         }
     }
