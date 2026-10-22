@@ -3,7 +3,7 @@
 - **Status:** Aceito
 - **Data:** 2026-10-22
 - **Substitui:** —
-- **Substituído por:** [0009](0009-video-android-pelo-framebuffer-do-emulador.md) (só a parte de vídeo), [0012](0012-controle-unico-com-paridade-de-teclado-e-mouse.md) (mouse/touch no app)
+- **Substituído por:** [0009](0009-video-android-pelo-framebuffer-do-emulador.md) (só a parte de vídeo), [0012](0012-controle-unico-com-paridade-de-teclado-e-mouse.md) (mouse/touch no app), [0018](0018-sdk-android-instalado-pelo-app.md) (instalação e caminho do SDK)
 
 ## Contexto
 
