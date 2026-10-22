@@ -21,12 +21,18 @@ struct HomeView: View {
                 }
                 Spacer()
                 GlassEffectContainer {
+                    let isFocused = focus.target == .settings
                     Button(action: onOpenSettings) {
                         Image(systemName: "gearshape.fill")
                             .font(.largeTitle)
+                            .foregroundStyle(isFocused ? .black : .primary)
                             .padding(16)
                     }
-                    .buttonStyle(.glass(focus.target == .settings ? .regular.tint(.accentColor) : .regular))
+                    // White glass, lift and shadow make the focus obvious over any background tint, as on tvOS.
+                    .buttonStyle(.glass(isFocused ? .regular.tint(.white) : .regular))
+                    .shadow(color: .black.opacity(isFocused ? 0.35 : 0), radius: 20, y: 12)
+                    .scaleEffect(isFocused && !reduceMotion ? 1.1 : 1)
+                    .animation(reduceMotion ? nil : .spring(duration: 0.25), value: isFocused)
                     .onHover { if $0, inputMode.kind == .pointer { focus.target = .settings } }
                 }
             }
