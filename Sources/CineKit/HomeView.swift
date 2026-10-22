@@ -18,7 +18,7 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: 24) {
                     TimelineView(.everyMinute) { context in
                         Text(context.date, format: .dateTime.hour().minute())
-                            .font(.largeTitle.bold())
+                            .font(.system(size: 80, weight: .bold))
                             .monospacedDigit()
                     }
                     pairingCode
@@ -83,13 +83,13 @@ struct HomeView: View {
     @ViewBuilder
     private var pairingCode: some View {
         if remoteServer.state == .running, let qrCode = remoteServer.pairingQRCode {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(spacing: 12) {
                 Image(nsImage: qrCode)
                     .interpolation(.none)
                     .resizable()
-                    .frame(width: 160, height: 160)
-                    .padding(12)
-                    .background(RoundedRectangle(cornerRadius: 16).fill(.white))
+                    .frame(width: 240, height: 240)
+                    .padding(16)
+                    .background(RoundedRectangle(cornerRadius: 20).fill(.white))
                 Text("Controle remoto")
                     .font(.headline)
                     .foregroundStyle(.secondary)
