@@ -26,7 +26,7 @@ struct AppCardView: View {
 
     @ViewBuilder
     private var artwork: some View {
-        if let url = store.imageURL(for: app) ?? Bundle.module.url(forResource: app.id, withExtension: "png"),
+        if let url = store.imageURL(for: app) ?? Bundle.resources.url(forResource: app.id, withExtension: "png"),
            let image = NSImage(contentsOf: url) {
             Image(nsImage: image)
                 .resizable()

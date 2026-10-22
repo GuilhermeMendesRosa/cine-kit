@@ -20,7 +20,7 @@ struct ServiceWebView: NSViewRepresentable {
             let configuration = WKWebViewConfiguration()
             configuration.websiteDataStore = .default()
             if profile.usesSpatialNavigation {
-                let scriptURL = Bundle.module.url(forResource: "spatial-navigation", withExtension: "js")!
+                let scriptURL = Bundle.resources.url(forResource: "spatial-navigation", withExtension: "js")!
                 let script = try! String(contentsOf: scriptURL, encoding: .utf8)
                 configuration.userContentController.addUserScript(
                     WKUserScript(source: script, injectionTime: .atDocumentStart, forMainFrameOnly: true)

@@ -77,6 +77,7 @@ Armadilhas das Command Line Tools:
 - **`SDKROOT` no SDK 26:** no SDK do macOS 27, `@State` e outros wrappers do SwiftUI viram macros cujo plugin (`SwiftUIMacros`) só vem com o Xcode; sem o `SDKROOT` o build falha com `plugin for module 'SwiftUIMacros' not found`. O `scripts/bundle.sh` já fixa esse SDK.
 - **`-plugin-path` no `swift test`:** o plugin de macros do Swift Testing fica em `plugins/testing`, fora do caminho padrão; sem a flag, `@Test` falha com `plugin for module 'TestingMacros' not found`.
 - Com o Xcode instalado, as duas armadilhas somem e `swift build`/`swift test` puros funcionam.
+- **`Bundle.module` no `.app`:** o acessor gerado pelo `swift build` só procura o `CineKit_CineKit.bundle` ao lado do `.app` e no `.build` de quem compilou. Na máquina de dev funciona por acaso; no `.dmg` do CI o app quebra. Use `Bundle.resources`, que olha em `Contents/Resources`. Para testar, esconda o `.bundle` da pasta do `swift build -c release --show-bin-path` e abra o `.app`.
 
 ## Mantendo este arquivo
 
