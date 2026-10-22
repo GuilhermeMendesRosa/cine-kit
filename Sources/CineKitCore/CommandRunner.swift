@@ -14,8 +14,16 @@ public protocol CommandRunner: Sendable {
     func launch(_ executable: URL, _ arguments: [String]) throws -> RunningProcess
 }
 
-public enum CommandError: Error, Equatable {
+public enum CommandError: LocalizedError, Equatable {
     case failed(status: Int32, output: String)
+
+    public var errorDescription: String? {
+        switch self {
+        case .failed(let status, let output):
+            let message = output.trimmingCharacters(in: .whitespacesAndNewlines)
+            return message.isEmpty ? "exit status \(status)" : message
+        }
+    }
 }
 
 public struct ProcessCommandRunner: CommandRunner {

@@ -107,8 +107,8 @@ public final class AndroidInstaller {
         try? fileManager.removeItem(at: staging)
         try fileManager.createDirectory(at: staging, withIntermediateDirectories: true)
         defer { try? fileManager.removeItem(at: staging) }
-        // ditto keeps the executable bits and symlinks of the zip.
-        _ = try await runner.run(URL(filePath: "/usr/bin/ditto"), ["-x", "-k", file.path(percentEncoded: false), staging.path(percentEncoded: false)])
+        // unzip keeps the executable bits and symlinks of the zip; ditto fails on zip64 entries like the 8.6 GB system.img.
+        _ = try await runner.run(URL(filePath: "/usr/bin/unzip"), ["-q", file.path(percentEncoded: false), "-d", staging.path(percentEncoded: false)])
         let contents = try fileManager.contentsOfDirectory(atPath: staging.path(percentEncoded: false)).filter { $0 != "__MACOSX" }
         guard contents.count == 1, let folder = contents.first else { throw AndroidInstallerError.unexpectedArchive(package.name) }
         try fileManager.moveItem(at: staging.appending(path: folder), to: target)

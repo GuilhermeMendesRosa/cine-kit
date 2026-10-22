@@ -21,7 +21,7 @@ private final class FakeDownloader: Downloader, @unchecked Sendable {
     }
 }
 
-/// Stands in for ditto: unpacks every zip as `<folder>/source.properties`.
+/// Stands in for unzip: unpacks every zip as `<folder>/source.properties`.
 private final class FakeExtractor: CommandRunner, @unchecked Sendable {
     var folder = "android-15"
 
