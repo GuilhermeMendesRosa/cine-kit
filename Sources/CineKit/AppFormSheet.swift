@@ -28,8 +28,15 @@ struct AppFormSheet: View {
         AppDraft(name: name, link: link).validate()
     }
 
+    /// Android apps keep their package; only the name and photo are editable (ADR 0004).
+    private var isAndroid: Bool { app?.androidPackage != nil }
+
+    private var canSave: Bool {
+        isAndroid ? !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty : (try? validation.get()) != nil
+    }
+
     private var validationMessage: String? {
-        guard case .failure(let error) = validation, !(name.isEmpty && link.isEmpty) else { return nil }
+        guard !isAndroid, case .failure(let error) = validation, !(name.isEmpty && link.isEmpty) else { return nil }
         switch error {
         case .emptyName: return "Informe um nome."
         case .emptyLink: return "Informe um link."
@@ -41,7 +48,9 @@ struct AppFormSheet: View {
     var body: some View {
         Form {
             TextField("Nome", text: $name)
-            TextField("Link", text: $link, prompt: Text("netflix.com"))
+            if !isAndroid {
+                TextField("Link", text: $link, prompt: Text("netflix.com"))
+            }
             HStack {
                 Text(imageFileName == nil ? "Sem foto" : "Foto escolhida")
                 Spacer()
@@ -64,7 +73,7 @@ struct AppFormSheet: View {
             }
             ToolbarItem(placement: .confirmationAction) {
                 Button("Salvar", action: save)
-                    .disabled((try? validation.get()) == nil)
+                    .disabled(!canSave)
             }
         }
     }
@@ -82,6 +91,13 @@ struct AppFormSheet: View {
     }
 
     private func save() {
+        if var saved = app, isAndroid {
+            saved.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+            saved.imageFileName = imageFileName
+            onSave(saved)
+            dismiss()
+            return
+        }
         guard case .success(let validated) = validation else { return }
         var saved = app ?? StreamingApp(
             id: UUID().uuidString,

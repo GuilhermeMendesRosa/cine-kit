@@ -8,7 +8,11 @@ struct AndroidScreen: View {
         case opening, playing, failed
     }
 
+    private static let escapeKeyCode: UInt16 = 53
+    private static let backKeycode: Int32 = 4
+
     let app: StreamingApp
+    let onExit: () -> Void
 
     @Environment(AndroidRuntime.self) private var runtime: AndroidRuntime?
     @State private var phase = Phase.opening
@@ -45,6 +49,7 @@ struct AndroidScreen: View {
                 .background(.black)
             }
         }
+        .onAppear(perform: installKeyMonitor)
         .task { await open() }
         .onDisappear(perform: close)
     }
@@ -69,8 +74,16 @@ struct AndroidScreen: View {
             self.client = client
             try await client.start()
             try Task.checkCancellation()
-            installKeyMonitor(client)
             phase = .playing
+            // Back on the app's root screen closes it: return home without streaming the launcher.
+            while true {
+                try await Task.sleep(for: .seconds(1))
+                if let foreground = try await runtime.foregroundPackage(), foreground != package {
+                    client.stop()
+                    onExit()
+                    return
+                }
+            }
         } catch {
             // Also covers leaving the screen while it was opening.
             client?.stop()
@@ -78,8 +91,13 @@ struct AndroidScreen: View {
         }
     }
 
-    private func installKeyMonitor(_ client: ScrcpyClient) {
+    private func installKeyMonitor() {
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp]) { event in
+            if event.keyCode == Self.escapeKeyCode {
+                handleEscape(event)
+                return nil
+            }
+            guard phase == .playing, let client else { return event }
             let modifiers: Set<AndroidKeyMap.Modifier> = event.modifierFlags.contains(.command) ? [.command] : []
             guard let action = AndroidKeyMap.action(keyCode: event.keyCode, characters: event.characters, modifiers: modifiers) else {
                 return event
@@ -92,6 +110,20 @@ struct AndroidScreen: View {
                 if isDown { client.send(.injectText(text)) }
             }
             return nil
+        }
+    }
+
+    /// Esc is the remote's Back; holding it (first auto-repeat) goes home from anywhere.
+    private func handleEscape(_ event: NSEvent) {
+        guard phase == .playing, let client else {
+            if event.type == .keyDown { onExit() }
+            return
+        }
+        if event.type == .keyDown {
+            if event.isARepeat { onExit() }
+        } else {
+            client.send(.injectKeycode(action: .down, keycode: Self.backKeycode))
+            client.send(.injectKeycode(action: .up, keycode: Self.backKeycode))
         }
     }
 

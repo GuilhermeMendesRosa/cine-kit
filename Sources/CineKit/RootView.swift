@@ -16,7 +16,7 @@ struct RootView: View {
         Group {
             if let openApp {
                 if openApp.androidPackage != nil {
-                    AndroidScreen(app: openApp)
+                    AndroidScreen(app: openApp) { self.openApp = nil }
                 } else {
                     ServiceScreen(app: openApp)
                 }
@@ -41,6 +41,8 @@ struct RootView: View {
             escapeMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
                 guard event.keyCode == Self.escapeKeyCode else { return event }
                 if openApp != nil {
+                    // Android apps take Esc as the remote's Back button.
+                    if openApp?.androidPackage != nil { return event }
                     openApp = nil
                     return nil
                 }

@@ -121,4 +121,10 @@ struct AndroidRuntimeTests {
 
         #expect(runner.launched.count == 1)
     }
+
+    @Test func uninstallCallsAdb() async throws {
+        try await runtime.uninstall(package: "org.jellyfin.androidtv")
+
+        #expect(runner.calls == ["adb -s emulator-5554 uninstall org.jellyfin.androidtv"])
+    }
 }

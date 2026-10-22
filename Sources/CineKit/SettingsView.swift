@@ -1,9 +1,12 @@
 import AppKit
 import CineKitCore
+import os
 import SwiftUI
 import UniformTypeIdentifiers
 
 struct SettingsView: View {
+    private static let logger = Logger(subsystem: "dev.guilhermemendes.CineKit", category: "SettingsView")
+
     private enum FormTarget: Identifiable {
         case new
         case edit(StreamingApp)
@@ -88,7 +91,19 @@ struct SettingsView: View {
             isPresented: .constant(pendingRemoval != nil),
             presenting: pendingRemoval
         ) { app in
-            Button("Remover", role: .destructive) { perform { try store.remove(id: app.id) } }
+            Button("Remover", role: .destructive) {
+                perform { try store.remove(id: app.id) }
+                // Best effort: the card goes away even if the emulator is off.
+                if let package = app.androidPackage, let androidRuntime {
+                    Task {
+                        do {
+                            try await androidRuntime.uninstall(package: package)
+                        } catch {
+                            Self.logger.error("Uninstall of \(package, privacy: .public) failed: \(error)")
+                        }
+                    }
+                }
+            }
             Button("Cancelar", role: .cancel) { pendingRemoval = nil }
         }
         .confirmationDialog("Restaurar os apps padrão?", isPresented: $confirmsRestore) {

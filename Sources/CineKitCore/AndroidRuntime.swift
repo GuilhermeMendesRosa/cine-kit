@@ -77,6 +77,10 @@ public final class AndroidRuntime {
         return badging
     }
 
+    public func uninstall(package: String) async throws {
+        _ = try await adb("uninstall", package)
+    }
+
     /// TV apps declare LEANBACK_LAUNCHER; phone apps only LAUNCHER.
     public func launch(package: String) async throws {
         for category in ["android.intent.category.LEANBACK_LAUNCHER", "android.intent.category.LAUNCHER"] {
