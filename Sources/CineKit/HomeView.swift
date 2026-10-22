@@ -9,12 +9,8 @@ struct HomeView: View {
 
     @FocusState private var hasKeyboardFocus: Bool
 
-    private var heroApp: StreamingApp? {
-        apps.indices.contains(focus.lastCard) ? apps[focus.lastCard] : nil
-    }
-
     var body: some View {
-        VStack(alignment: .leading, spacing: 48) {
+        VStack(spacing: 48) {
             HStack {
                 Spacer()
                 GlassEffectContainer {
@@ -30,23 +26,12 @@ struct HomeView: View {
 
             Spacer()
 
-            Text(heroApp?.name ?? "")
-                .font(.largeTitle.bold())
-                .padding(.horizontal, 80)
-
             shelf
         }
         .padding(.vertical, 80)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background {
-            LinearGradient(
-                colors: [Color(hex: heroApp?.colorHex ?? "#000000").opacity(0.6), .black],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
-            .animation(.easeInOut, value: focus.lastCard)
-        }
+        .background(Color.white.ignoresSafeArea())
+        .environment(\.colorScheme, .light)
         .focusable()
         .focusEffectDisabled()
         .focused($hasKeyboardFocus)
@@ -67,16 +52,17 @@ struct HomeView: View {
     private var shelf: some View {
         ScrollViewReader { proxy in
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 48) {
+                HStack(spacing: 24) {
                     ForEach(Array(apps.enumerated()), id: \.element.id) { index, app in
                         AppCardView(app: app, isFocused: focus.target == .card(index))
                             .id(index)
                     }
                 }
-                .padding(.horizontal, 80)
-                .padding(.vertical, 40)
+                .padding(20)
             }
-            .scrollClipDisabled()
+            .background(RoundedRectangle(cornerRadius: 40).fill(Color(white: 0.9)))
+            .clipShape(RoundedRectangle(cornerRadius: 40))
+            .padding(.horizontal, 80)
             .onAppear { proxy.scrollTo(focus.lastCard, anchor: .center) }
             .onChange(of: focus.lastCard) { _, index in
                 withAnimation { proxy.scrollTo(index, anchor: .center) }

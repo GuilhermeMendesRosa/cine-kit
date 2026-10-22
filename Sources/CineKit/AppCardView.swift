@@ -7,14 +7,13 @@ struct AppCardView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(AppCatalogStore.self) private var store
 
-    private let shape = RoundedRectangle(cornerRadius: 24)
+    private let shape = RoundedRectangle(cornerRadius: 20)
 
     var body: some View {
         artwork
-            .frame(width: 400, height: 225)
+            .frame(width: 280, height: 158)
             .clipShape(shape)
-            .overlay { shape.strokeBorder(.white, lineWidth: isFocused ? 5 : 0) }
-            .shadow(color: .black.opacity(isFocused ? 0.6 : 0), radius: 24, y: 12)
+            .shadow(color: .black.opacity(isFocused ? 0.35 : 0.1), radius: isFocused ? 20 : 4, y: isFocused ? 12 : 2)
             .scaleEffect(isFocused && !reduceMotion ? 1.1 : 1)
             .animation(reduceMotion ? nil : .spring(duration: 0.25), value: isFocused)
     }
