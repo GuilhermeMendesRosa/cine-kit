@@ -27,7 +27,7 @@ O objetivo é que qualquer pessoa — ou agente de IA — entenda **por que** o 
 | --- | --- | --- | --- |
 | [0001](0001-registrar-decisoes-de-arquitetura.md) | Registrar decisões de arquitetura com ADRs | Aceito | 2026-10-21 |
 | [0002](0002-app-nativo-swift-com-webkit.md) | App nativo em Swift com WebKit para os serviços de streaming | Aceito | 2026-10-21 |
-| [0003](0003-controle-remoto-web-via-wifi.md) | Controle remoto web via Wi-Fi | Proposto | 2026-10-21 |
+| [0003](0003-controle-remoto-web-via-wifi.md) | Controle remoto web via Wi-Fi | Aceito | 2026-10-22 |
 | [0004](0004-apps-android-via-emulador.md) | Apps Android (APK) via emulador, só para apps sem DRM | Aceito | 2026-10-22 |
 | [0005](0005-ui-nativa-com-liquid-glass.md) | UI nativa com Liquid Glass | Aceito | 2026-10-21 |
 | [0006](0006-estrutura-swift-package.md) | Estrutura do projeto como Swift Package | Aceito | 2026-10-21 |
@@ -35,3 +35,4 @@ O objetivo é que qualquer pessoa — ou agente de IA — entenda **por que** o 
 | [0008](0008-navegacao-por-setas-nos-servicos-web.md) | Navegação por setas nos serviços web | Aceito | 2026-10-22 |
 | [0009](0009-video-android-pelo-framebuffer-do-emulador.md) | Vídeo dos apps Android pelo framebuffer do emulador | Aceito | 2026-10-22 |
 | [0010](0010-youtube-com-ui-de-tv-na-webview.md) | YouTube com a UI de TV na webview | Aceito | 2026-10-22 |
+| [0011](0011-app-web-do-controle-em-react.md) | App web do controle em React | Aceito | 2026-10-22 |
