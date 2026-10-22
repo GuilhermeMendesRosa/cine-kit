@@ -18,4 +18,12 @@ struct WebProfileTests {
         #expect(profile.userAgent == nil)
         #expect(profile.usesSpatialNavigation)
     }
+
+    @Test func youtubeHandlesBack() {
+        #expect(WebProfile.for(URL(string: "https://www.youtube.com")!).handlesBack)
+    }
+
+    @Test func otherServicesDoNotHandleBack() {
+        #expect(!WebProfile.for(URL(string: "https://www.netflix.com")!).handlesBack)
+    }
 }

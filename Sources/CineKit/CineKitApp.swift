@@ -13,6 +13,7 @@ struct CineKitApp: App {
                 .environment(store)
                 .environment(appDelegate.androidRuntime)
                 .environment(appDelegate.remoteServer)
+                .environment(appDelegate.inputMode)
                 .preferredColorScheme(.dark)
         }
     }
@@ -23,11 +24,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Nil without the Android SDK: the Android UI stays hidden (ADR 0004).
     let androidRuntime = AndroidSDK.default.isAvailable ? AndroidRuntime(sdk: .default, runner: ProcessCommandRunner()) : nil
     let remoteServer = RemoteServer()
+    let inputMode = InputMode()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.activate()
         DispatchQueue.main.async {
             NSApp.windows.first?.toggleFullScreen(nil)
+            // After the window exists, which it needs for mouse-moved events.
+            self.inputMode.start()
         }
         remoteServer.start()
         if let androidRuntime {

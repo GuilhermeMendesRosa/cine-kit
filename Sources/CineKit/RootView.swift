@@ -1,12 +1,12 @@
 import AppKit
 import CineKitCore
 import SwiftUI
+import WebKit
 
 struct RootView: View {
     private static let escapeKeyCode: UInt16 = 53
 
     @Environment(AppCatalogStore.self) private var store
-    @Environment(RemoteServer.self) private var remoteServer
     @State private var openApp: StreamingApp?
     @State private var isShowingSettings = false
     @State private var loadError: String?
@@ -38,12 +38,11 @@ struct RootView: View {
             } catch {
                 loadError = error.localizedDescription
             }
-            // Local monitors run before the event reaches the web view, so Esc always goes home.
             escapeMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
                 guard event.keyCode == Self.escapeKeyCode else { return event }
                 if openApp != nil {
-                    // Android apps take Esc as the remote's Back button.
-                    if openApp?.androidPackage != nil { return event }
+                    // Android apps and web pages take Esc as Back (ADR 0012); a failed web page has no web view left.
+                    if openApp?.androidPackage != nil || NSApp.keyWindow?.firstResponder is WKWebView { return event }
                     openApp = nil
                     return nil
                 }
@@ -57,13 +56,6 @@ struct RootView: View {
         }
         .onDisappear {
             if let escapeMonitor { NSEvent.removeMonitor(escapeMonitor) }
-        }
-        .onChange(of: openApp, initial: true) { _, app in
-            remoteServer.screen = switch app {
-            case nil: .other
-            case let app? where app.androidPackage != nil: .android
-            default: .web
-            }
         }
     }
 

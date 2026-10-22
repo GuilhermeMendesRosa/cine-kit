@@ -7,11 +7,13 @@ public struct WebProfile: Equatable, Sendable {
     public var url: URL
     public var userAgent: String?
     public var usesSpatialNavigation: Bool
+    /// The page handles Back itself (YouTube TV takes Backspace).
+    public var handlesBack: Bool
 
     public static func `for`(_ url: URL) -> WebProfile {
         if ["youtube.com", "www.youtube.com"].contains(url.host()) {
-            return WebProfile(url: URL(string: "https://www.youtube.com/tv")!, userAgent: tvUserAgent, usesSpatialNavigation: false)
+            return WebProfile(url: URL(string: "https://www.youtube.com/tv")!, userAgent: tvUserAgent, usesSpatialNavigation: false, handlesBack: true)
         }
-        return WebProfile(url: url, userAgent: nil, usesSpatialNavigation: true)
+        return WebProfile(url: url, userAgent: nil, usesSpatialNavigation: true, handlesBack: false)
     }
 }

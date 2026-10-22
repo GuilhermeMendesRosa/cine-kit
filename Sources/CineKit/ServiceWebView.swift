@@ -26,6 +26,7 @@ struct ServiceWebView: NSViewRepresentable {
         }
         let webView = FocusingWebView(frame: .zero, configuration: configuration)
         webView.onExit = onExit
+        webView.handlesBack = profile.handlesBack
         webView.customUserAgent = profile.userAgent ?? Self.safariUserAgent
         webView.navigationDelegate = context.coordinator
         webView.load(URLRequest(url: profile.url))
@@ -61,12 +62,51 @@ struct ServiceWebView: NSViewRepresentable {
 // The home leaves the screen and keyboard focus does not reach the web view on its own.
 private final class FocusingWebView: WKWebView {
     private static let leftBracketKeyCode: UInt16 = 33
+    private static let escapeKeyCode: UInt16 = 53
+    private static let deleteKeyCode: UInt16 = 51
 
     var onExit: () -> Void = {}
+    var handlesBack = false
+    private var escapeMonitor: Any?
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
         window?.makeFirstResponder(self)
+        if window != nil, escapeMonitor == nil {
+            escapeMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp]) { [weak self] event in
+                guard let self, event.keyCode == Self.escapeKeyCode else { return event }
+                handleEscape(event)
+                return nil
+            }
+        } else if window == nil, let escapeMonitor {
+            NSEvent.removeMonitor(escapeMonitor)
+            self.escapeMonitor = nil
+        }
+    }
+
+    /// Esc is Back on release; holding it (first auto-repeat) goes home from anywhere (ADR 0012).
+    private func handleEscape(_ event: NSEvent) {
+        if event.type == .keyDown {
+            if event.isARepeat { onExit() }
+            return
+        }
+        switch WebBack.action(isFullscreen: fullscreenState == .inFullscreen, handlesBack: handlesBack, canGoBack: canGoBack) {
+        case .exitFullscreen:
+            evaluateJavaScript("document.exitFullscreen()")
+        case .sendBackspace:
+            for type in [NSEvent.EventType.keyDown, .keyUp] {
+                guard let backspace = NSEvent.keyEvent(
+                    with: type, location: .zero, modifierFlags: [], timestamp: event.timestamp,
+                    windowNumber: event.windowNumber, context: nil, characters: "\u{7F}",
+                    charactersIgnoringModifiers: "\u{7F}", isARepeat: false, keyCode: Self.deleteKeyCode
+                ) else { continue }
+                type == .keyDown ? keyDown(with: backspace) : keyUp(with: backspace)
+            }
+        case .goBack:
+            goBack()
+        case .exit:
+            onExit()
+        }
     }
 
     // ⌘[ is Back, as in Safari; with no history it leaves the service (ADR 0003).

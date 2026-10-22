@@ -28,12 +28,10 @@ final class RemoteServer {
         36: "\r",
         49: " ",
         53: "\u{1B}",
-        33: "[",
     ]
 
     private(set) var state = State.running
     private(set) var token: String
-    var screen = RemoteScreen.other
     @ObservationIgnored private var listener: NWListener?
 
     init() {
@@ -114,7 +112,7 @@ final class RemoteServer {
         case .volumeDown: SystemVolume.adjust(.down)
         case .mute: SystemVolume.toggleMute()
         default:
-            for keystroke in RemoteKeyMap.keystrokes(for: button, screen: screen) {
+            for keystroke in RemoteKeyMap.keystrokes(for: button) {
                 post(keystroke)
             }
         }

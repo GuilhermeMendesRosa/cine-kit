@@ -1,7 +1,3 @@
-public enum RemoteScreen: Sendable {
-    case android, web, other
-}
-
 public struct Keystroke: Equatable, Sendable {
     public let keyCode: UInt16
     public let command: Bool
@@ -9,7 +5,7 @@ public struct Keystroke: Equatable, Sendable {
     public let isRepeat: Bool
 }
 
-/// Maps remote buttons to the Mac keys each screen already handles (ADR 0003).
+/// Maps remote buttons to the same Mac keys in every screen (ADR 0012).
 public enum RemoteKeyMap {
     // Remote button → Mac virtual key code.
     private static let keys: [RemoteButton: UInt16] = [
@@ -21,17 +17,14 @@ public enum RemoteKeyMap {
         .playPause: 49, // Space
     ]
     private static let escapeKeyCode: UInt16 = 53
-    private static let leftBracketKeyCode: UInt16 = 33
 
     /// Empty for the volume buttons, which the server handles itself.
-    public static func keystrokes(for button: RemoteButton, screen: RemoteScreen) -> [Keystroke] {
+    public static func keystrokes(for button: RemoteButton) -> [Keystroke] {
         switch button {
-        case .back where screen == .web:
-            press(leftBracketKeyCode, command: true)
         case .back:
             press(escapeKeyCode)
         case .home:
-            // A held Esc: Android screens leave on the repeat; elsewhere the first Esc already goes home.
+            // A held Esc: app screens leave on the repeat; elsewhere the first Esc already goes home.
             [
                 Keystroke(keyCode: escapeKeyCode, command: false, isDown: true, isRepeat: false),
                 Keystroke(keyCode: escapeKeyCode, command: false, isDown: true, isRepeat: true),
