@@ -17,7 +17,7 @@ Em tempo de execução o app só usa binários nativos: `adb`, `emulator`, `aapt
 - **O quê:** zips baixados direto de `dl.google.com/android/repository`, com versão, URL e sha1 fixos no código (`AndroidSDKPackage`): `platform-tools` 37.0.1, `emulator` 37.2.12 (darwin aarch64), `build-tools` 35.0.0 e `system-images;android-36;android-tv;arm64-v8a` rev 4. O scrcpy-server v5.0.1 vem do GitHub com sha256 fixo, como antes. Cerca de 1,5 GB de download.
 - **Como:** `AndroidInstaller` (no Core) baixa cada pacote para um arquivo temporário, confere o checksum, extrai com `ditto -x -k` e move a pasta de topo do zip para o caminho do SDK. Depois escreve o AVD (`AndroidAVD`, o mesmo `config.ini` que o `avdmanager` gerava, com 2 GB de RAM e 4 GB de dados). É idempotente: pula o que já existe, então uma instalação interrompida continua de onde parou.
 - **Sem Homebrew, Java, sdkmanager nem avdmanager.**
-- **Quando:** na primeira abertura o app pergunta uma vez se deve instalar o suporte a apps Android. Nas Configurações, a seção Android mostra o botão "Instalar apps Android" enquanto o SDK não existe, e o progresso durante a instalação. Os dois mostram que instalar aceita os termos de licença do Android SDK. Ao terminar, a VM sobe e "Adicionar APK…" aparece, sem reiniciar o app.
+- **Quando:** nas Configurações, a seção Android tem a linha "Apps Android" `[Desligado] [Ligado]` (`androidEnabled` no `UserDefaults`, que começa ligado se o SDK já existe). Ligar instala o SDK que ainda não existe, mostrando o progresso e que instalar aceita os termos de licença do Android SDK; ao terminar, a VM sobe e "Adicionar APK…" aparece, sem reiniciar o app. Desligar para a VM e esconde a UI e os cards Android, sem apagar o SDK nem os apps do `apps.json`. A primeira abertura não pergunta nada.
 - O `scripts/android-setup.sh` sai do repositório.
 
 ## Alternativas consideradas
@@ -26,6 +26,8 @@ Em tempo de execução o app só usa binários nativos: `adb`, `emulator`, `aapt
 - **Embutir o SDK no `.dmg`** — o `.dmg` passaria de 1,5 GB para todo mundo, inclusive quem nunca usa Android.
 - **Ler o `repository2-3.xml` e baixar sempre a versão mais nova** — versões novas do emulador ou da imagem podem quebrar o vídeo e o protocolo do scrcpy ([0009](0009-video-android-pelo-framebuffer-do-emulador.md)); fixar mantém o que foi testado.
 - **Instalar sem perguntar** — baixaria 1,5 GB e aceitaria uma licença sem consentimento.
+- **Perguntar na primeira abertura** — incomoda quem não quer Android; o toggle já pede consentimento antes de baixar.
+- **Apagar o SDK ao desligar** — liberaria espaço, mas religar baixaria 1,5 GB de novo.
 
 ## Consequências
 

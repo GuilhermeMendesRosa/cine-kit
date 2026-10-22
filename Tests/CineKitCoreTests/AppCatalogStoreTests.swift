@@ -30,6 +30,18 @@ struct AppCatalogStoreTests {
         #expect(try makeStore().apps.last?.androidPackage == "org.jellyfin.androidtv")
     }
 
+    @Test func visibleAppsHidesAndroidWhenDisabled() throws {
+        let store = try makeStore()
+        try store.add(StreamingApp.android(package: "org.jellyfin.androidtv", name: "Jellyfin"))
+        #expect(store.visibleApps(androidEnabled: false) == DefaultApps.all)
+    }
+
+    @Test func visibleAppsKeepsAllWhenEnabled() throws {
+        let store = try makeStore()
+        try store.add(StreamingApp.android(package: "org.jellyfin.androidtv", name: "Jellyfin"))
+        #expect(store.visibleApps(androidEnabled: true) == store.apps)
+    }
+
     @Test func updateDefaultAppPersists() throws {
         var netflix = DefaultApps.all[0]
         netflix.name = "Netflix Kids"

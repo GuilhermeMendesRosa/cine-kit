@@ -2,7 +2,7 @@ import CineKitCore
 import Foundation
 import os
 
-/// Owns the Android runtime, which exists only once the SDK is installed, and the in-app install (ADR 0004, 0018).
+/// Owns the Android on/off toggle, the runtime, which exists only once the SDK is installed, and the in-app install (ADR 0004, 0018).
 @MainActor
 @Observable
 final class AndroidSetup {
@@ -13,6 +13,10 @@ final class AndroidSetup {
     /// Nil without the Android SDK: the Android UI offers the install instead.
     private(set) var runtime: AndroidRuntime?
     private(set) var failure: String?
+    /// Starts on when the SDK is already there, so an update keeps the Android apps.
+    private(set) var isEnabled = UserDefaults.standard.object(forKey: "androidEnabled") as? Bool ?? AndroidSDK.default.isAvailable {
+        didSet { UserDefaults.standard.set(isEnabled, forKey: "androidEnabled") }
+    }
     let installer = AndroidInstaller(sdk: .default, downloader: URLSessionDownloader(), runner: ProcessCommandRunner())
 
     var isInstalling: Bool { installer.state != .idle }
@@ -24,13 +28,29 @@ final class AndroidSetup {
     }
 
     func start() {
-        guard let runtime else { return }
+        guard isEnabled, let runtime else { return }
         // A failure here is retried when an Android app is opened.
         let resolution = UserDefaults.standard.string(forKey: "androidResolution").flatMap(AndroidRuntime.Resolution.init) ?? .hd1080
         Task { try? await runtime.start(resolution: resolution) }
     }
 
-    func install() {
+    func enable() {
+        isEnabled = true
+        if runtime == nil {
+            install()
+        } else {
+            start()
+        }
+    }
+
+    /// Keeps the SDK and the Android apps, so turning it back on downloads nothing.
+    func disable() {
+        guard !isInstalling else { return }
+        isEnabled = false
+        runtime?.stop()
+    }
+
+    private func install() {
         guard runtime == nil, !isInstalling else { return }
         failure = nil
         Task {
@@ -41,6 +61,7 @@ final class AndroidSetup {
             } catch {
                 Self.logger.error("Android install failed: \(error)")
                 failure = error.localizedDescription
+                isEnabled = false
             }
         }
     }

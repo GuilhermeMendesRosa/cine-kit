@@ -33,7 +33,7 @@ Requer **macOS 26+** num Mac com **Apple Silicon**.
    xattr -dr com.apple.quarantine /Applications/CineKit.app
    ```
 
-4. Na primeira abertura o app pergunta se deve instalar o suporte a apps Android. Ele baixa cerca de 1,5 GB direto do Google (sem Homebrew nem Java). Dá para instalar depois em **Configurações → Android**.
+4. O suporte a apps Android é opcional: ligue em **Configurações → Android → Apps Android**. Ele baixa cerca de 1,5 GB direto do Google (sem Homebrew nem Java).
 
 Para usar o controle remoto, o celular precisa estar na mesma rede Wi-Fi. Permita o acesso à rede local quando o macOS perguntar.
 

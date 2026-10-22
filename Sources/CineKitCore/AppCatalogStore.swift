@@ -60,6 +60,11 @@ public final class AppCatalogStore {
         try save()
     }
 
+    /// Android apps stay in apps.json while Android is off, so they come back when it is turned on (ADR 0018).
+    public func visibleApps(androidEnabled: Bool) -> [StreamingApp] {
+        androidEnabled ? apps : apps.filter { $0.androidPackage == nil }
+    }
+
     public func restoreDefaults() throws {
         apps = DefaultApps.all + apps.filter { !$0.isDefault }
         try save()

@@ -16,7 +16,6 @@ struct RootView: View {
     @State private var shelfFocus = ShelfFocusState(target: .card(0), lastCard: 0)
     @State private var escapeMonitor: Any?
     @AppStorage("appTheme") private var theme = AppTheme.dark
-    @AppStorage("askedAndroidInstall") private var askedAndroidInstall = false
 
     var body: some View {
         Group {
@@ -33,24 +32,12 @@ struct RootView: View {
             } else if isShowingSettings {
                 SettingsView(onClose: closeSettings)
             } else {
-                HomeView(apps: store.apps, focus: $shelfFocus, onOpen: { openApp = $0 }, onOpenSettings: { isShowingSettings = true })
+                HomeView(apps: store.visibleApps(androidEnabled: androidSetup.isEnabled), focus: $shelfFocus, onOpen: { openApp = $0 }, onOpenSettings: { isShowingSettings = true })
             }
         }
         // Here and not in the App, so the runtime reaches the screens as soon as the install creates it.
-        .environment(androidSetup.runtime)
+        .environment(androidSetup.isEnabled ? androidSetup.runtime : nil)
         .onChange(of: store.apps) { _, apps in webViewCache.discardStale(apps) }
-        // Asked once, on the first launch without the SDK (ADR 0018); Settings keeps the install button.
-        .alert("Instalar o suporte a apps Android?", isPresented: .constant(!askedAndroidInstall && androidSetup.runtime == nil)) {
-            Button("Instalar") {
-                askedAndroidInstall = true
-                androidSetup.install()
-                isShowingSettings = true
-            }
-            .keyboardShortcut(.defaultAction)
-            Button("Agora não", role: .cancel) { askedAndroidInstall = true }
-        } message: {
-            Text(AndroidSetup.installMessage)
-        }
         .alert("Não foi possível carregar os apps", isPresented: .constant(loadError != nil)) {
             Button("OK") { loadError = nil }
         } message: {
@@ -90,6 +77,6 @@ struct RootView: View {
     private func closeSettings() {
         isShowingSettings = false
         // Apps may have been removed while in settings.
-        shelfFocus.lastCard = max(0, min(shelfFocus.lastCard, store.apps.count - 1))
+        shelfFocus.lastCard = max(0, min(shelfFocus.lastCard, store.visibleApps(androidEnabled: androidSetup.isEnabled).count - 1))
     }
 }

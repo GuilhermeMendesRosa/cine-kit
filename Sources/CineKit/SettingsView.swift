@@ -67,7 +67,7 @@ struct SettingsView: View {
                     }
                     section("Apps") {
                         VStack(alignment: .leading, spacing: 16) {
-                            ForEach(store.apps.indices, id: \.self) { index in
+                            ForEach(apps.indices, id: \.self) { index in
                                 controls(rows, row: Self.firstAppRow + index)
                             }
                             controls(rows, row: actionsRow)
@@ -75,16 +75,7 @@ struct SettingsView: View {
                         }
                     }
                     section("Android") {
-                        if androidRuntime != nil {
-                            HStack(spacing: 16) {
-                                Text("Resolução")
-                                    .font(.title2)
-                                    .frame(width: 200, alignment: .leading)
-                                controls(rows, row: actionsRow + 1)
-                            }
-                        } else {
-                            androidInstallSection(rows)
-                        }
+                        androidSection(rows)
                     }
                     section("Controle remoto") {
                         remoteSection(rows)
@@ -173,11 +164,13 @@ struct SettingsView: View {
         }
     }
 
-    // Rows of the focus grid: back, theme, one per app, add/restore, Android resolution or install, remote.
+    // Rows of the focus grid: back, theme, one per app, add/restore, Android on/off and resolution, remote.
     private static let backRow = 0
     private static let themeRow = 1
     private static let firstAppRow = 2
-    private var actionsRow: Int { Self.firstAppRow + store.apps.count }
+    private var actionsRow: Int { Self.firstAppRow + apps.count }
+
+    private var apps: [StreamingApp] { store.visibleApps(androidEnabled: androidSetup.isEnabled) }
 
     private var rows: [[Control]] {
         var rows = [
@@ -186,7 +179,7 @@ struct SettingsView: View {
                 Control(title: option.title, isSelected: theme == option) { theme = option }
             },
         ]
-        rows += store.apps.map(appControls)
+        rows += apps.map(appControls)
         var actions = [Control(title: "Adicionar app", systemImage: "plus", shortcut: KeyboardShortcut("n")) { formTarget = .new }]
         if let androidRuntime {
             actions.append(Control(title: "Adicionar APK…", systemImage: "shippingbox") { addApk(with: androidRuntime) })
@@ -195,14 +188,18 @@ struct SettingsView: View {
             confirmsRestore = true
         })
         rows.append(actions)
+        if !androidSetup.isInstalling {
+            rows.append([
+                Control(title: "Desligado", isSelected: !androidSetup.isEnabled) { androidSetup.disable() },
+                Control(title: "Ligado", isSelected: androidSetup.isEnabled) { androidSetup.enable() },
+            ])
+        }
         if androidRuntime != nil {
             rows.append([AndroidRuntime.Resolution.hd1080, .uhd4k].map { resolution in
                 Control(title: resolution == .hd1080 ? "1080p" : "4K", isSelected: androidResolution == resolution) {
                     androidResolution = resolution
                 }
             })
-        } else if !androidSetup.isInstalling {
-            rows.append([Control(title: "Instalar apps Android", systemImage: "arrow.down.circle") { androidSetup.install() }])
         }
         if remoteServer.pairingURL != nil, remoteServer.state == .running {
             rows.append([Control(title: "Gerar novo código", systemImage: "qrcode") { remoteServer.regenerateToken() }])
@@ -212,7 +209,7 @@ struct SettingsView: View {
 
     private var focusedApp: StreamingApp? {
         let index = focus.row - Self.firstAppRow
-        return store.apps.indices.contains(index) ? store.apps[index] : nil
+        return apps.indices.contains(index) ? apps[index] : nil
     }
 
     private func appControls(_ app: StreamingApp) -> [Control] {
@@ -227,7 +224,7 @@ struct SettingsView: View {
     /// The focus follows the moved app.
     private func move(_ app: StreamingApp, by offset: Int) {
         perform { try store.move(id: app.id, by: offset) }
-        if let index = store.apps.firstIndex(where: { $0.id == app.id }) {
+        if let index = apps.firstIndex(where: { $0.id == app.id }) {
             focus.row = Self.firstAppRow + index
         }
     }
@@ -305,8 +302,8 @@ struct SettingsView: View {
         }
     }
 
-    /// Without the SDK: the install button, or the progress while it downloads (ADR 0018).
-    private func androidInstallSection(_ rows: [[Control]]) -> some View {
+    /// The on/off toggle and, once installed, the resolution; the progress while the SDK downloads (ADR 0018).
+    private func androidSection(_ rows: [[Control]]) -> some View {
         VStack(alignment: .leading, spacing: 24) {
             if case .installing(let step, let fraction) = androidSetup.installer.state {
                 ProgressView(value: fraction) {
@@ -315,14 +312,28 @@ struct SettingsView: View {
                 }
                 .frame(maxWidth: 800)
             } else {
-                Text(AndroidSetup.installMessage)
-                    .font(.title2)
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 16) {
+                    Text("Apps Android")
+                        .font(.title2)
+                        .frame(width: 200, alignment: .leading)
+                    controls(rows, row: actionsRow + 1)
+                }
+                if androidRuntime != nil {
+                    HStack(spacing: 16) {
+                        Text("Resolução")
+                            .font(.title2)
+                            .frame(width: 200, alignment: .leading)
+                        controls(rows, row: actionsRow + 2)
+                    }
+                } else if androidSetup.runtime == nil {
+                    Text(AndroidSetup.installMessage)
+                        .font(.title2)
+                        .foregroundStyle(.secondary)
+                }
                 if let failure = androidSetup.failure {
                     Text("A instalação falhou: \(failure)")
                         .font(.title2)
                 }
-                controls(rows, row: actionsRow + 1)
             }
         }
     }
