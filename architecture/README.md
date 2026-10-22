@@ -38,3 +38,4 @@ O objetivo é que qualquer pessoa — ou agente de IA — entenda **por que** o 
 | [0011](0011-app-web-do-controle-em-react.md) | App web do controle em React | Aceito | 2026-10-22 |
 | [0012](0012-controle-unico-com-paridade-de-teclado-e-mouse.md) | Controle único com paridade de teclado e mouse | Aceito | 2026-10-22 |
 | [0013](0013-tema-e-configuracoes-navegaveis.md) | Tema claro/escuro e Configurações navegáveis por setas | Aceito | 2026-10-22 |
+| [0014](0014-servicos-vivos-em-segundo-plano.md) | Serviços vivos em segundo plano | Aceito | 2026-10-22 |
