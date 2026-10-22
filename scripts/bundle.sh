@@ -40,6 +40,8 @@ cat > "$app/Contents/Info.plist" <<PLIST
     <string>APPL</string>
     <key>LSMinimumSystemVersion</key>
     <string>26.0</string>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>O controle remoto no celular se conecta ao CineKit pela rede local.</string>
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
 </dict>

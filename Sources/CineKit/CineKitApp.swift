@@ -12,6 +12,7 @@ struct CineKitApp: App {
             RootView()
                 .environment(store)
                 .environment(appDelegate.androidRuntime)
+                .environment(appDelegate.remoteServer)
                 .preferredColorScheme(.dark)
         }
     }
@@ -21,12 +22,14 @@ struct CineKitApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Nil without the Android SDK: the Android UI stays hidden (ADR 0004).
     let androidRuntime = AndroidSDK.default.isAvailable ? AndroidRuntime(sdk: .default, runner: ProcessCommandRunner()) : nil
+    let remoteServer = RemoteServer()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.activate()
         DispatchQueue.main.async {
             NSApp.windows.first?.toggleFullScreen(nil)
         }
+        remoteServer.start()
         if let androidRuntime {
             // A failure here is retried when an Android app is opened.
             let resolution = UserDefaults.standard.string(forKey: "androidResolution").flatMap(AndroidRuntime.Resolution.init) ?? .hd1080

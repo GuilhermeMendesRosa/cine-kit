@@ -1,5 +1,6 @@
 import AppKit
 import CineKitCore
+import CoreImage.CIFilterBuiltins
 import os
 import SwiftUI
 import UniformTypeIdentifiers
@@ -21,6 +22,7 @@ struct SettingsView: View {
 
     @Environment(AppCatalogStore.self) private var store
     @Environment(AndroidRuntime.self) private var androidRuntime: AndroidRuntime?
+    @Environment(RemoteServer.self) private var remoteServer
     @State private var selection: StreamingApp.ID?
     @State private var formTarget: FormTarget?
     @State private var pendingRemoval: StreamingApp?
@@ -58,6 +60,9 @@ struct SettingsView: View {
                     Task { try? await androidRuntime.restart(resolution: resolution) }
                 }
             }
+
+            remoteSection
+
 
             List(store.apps, selection: $selection) { app in
                 HStack {
@@ -130,6 +135,40 @@ struct SettingsView: View {
         } message: {
             Text(saveError ?? "")
         }
+    }
+
+    private var remoteSection: some View {
+        HStack(spacing: 32) {
+            if case .failed(let reason) = remoteServer.state {
+                Text("Controle indisponível: \(reason)")
+                    .font(.title2)
+            } else if let url = remoteServer.pairingURL, let qrCode = Self.qrCode(for: url) {
+                Image(nsImage: qrCode)
+                    .interpolation(.none)
+                    .resizable()
+                    .frame(width: 200, height: 200)
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Controle remoto")
+                        .font(.title.bold())
+                    Text("Escaneie com a câmera do celular, na mesma rede Wi-Fi.")
+                        .font(.title2)
+                    Text(url.absoluteString)
+                        .font(.title2)
+                        .foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                    Button("Gerar novo código", systemImage: "qrcode") { remoteServer.regenerateToken() }
+                        .controlSize(.extraLarge)
+                }
+            }
+        }
+    }
+
+    private static func qrCode(for url: URL) -> NSImage? {
+        let filter = CIFilter.qrCodeGenerator()
+        filter.message = Data(url.absoluteString.utf8)
+        guard let output = filter.outputImage,
+              let image = CIContext().createCGImage(output, from: output.extent) else { return nil }
+        return NSImage(cgImage: image, size: output.extent.size)
     }
 
     private func addApk(with runtime: AndroidRuntime) {

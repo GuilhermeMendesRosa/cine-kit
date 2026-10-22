@@ -3,6 +3,7 @@ import SwiftUI
 
 struct ServiceScreen: View {
     let app: StreamingApp
+    let onExit: () -> Void
     @State private var failed = false
 
     var body: some View {
@@ -19,7 +20,7 @@ struct ServiceScreen: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(.black)
         } else {
-            ServiceWebView(url: app.url) { failed = true }
+            ServiceWebView(url: app.url, onExit: onExit) { failed = true }
                 .ignoresSafeArea()
         }
     }

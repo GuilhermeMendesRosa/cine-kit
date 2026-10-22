@@ -6,6 +6,7 @@ struct RootView: View {
     private static let escapeKeyCode: UInt16 = 53
 
     @Environment(AppCatalogStore.self) private var store
+    @Environment(RemoteServer.self) private var remoteServer
     @State private var openApp: StreamingApp?
     @State private var isShowingSettings = false
     @State private var loadError: String?
@@ -18,7 +19,7 @@ struct RootView: View {
                 if openApp.androidPackage != nil {
                     AndroidScreen(app: openApp) { self.openApp = nil }
                 } else {
-                    ServiceScreen(app: openApp)
+                    ServiceScreen(app: openApp) { self.openApp = nil }
                 }
             } else if isShowingSettings {
                 SettingsView()
@@ -56,6 +57,13 @@ struct RootView: View {
         }
         .onDisappear {
             if let escapeMonitor { NSEvent.removeMonitor(escapeMonitor) }
+        }
+        .onChange(of: openApp, initial: true) { _, app in
+            remoteServer.screen = switch app {
+            case nil: .other
+            case let app? where app.androidPackage != nil: .android
+            default: .web
+            }
         }
     }
 
