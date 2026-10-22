@@ -1,3 +1,4 @@
+import CineKitCore
 import SwiftUI
 import WebKit
 
@@ -12,17 +13,20 @@ struct ServiceWebView: NSViewRepresentable {
     }
 
     func makeNSView(context: Context) -> WKWebView {
+        let profile = WebProfile.for(url)
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = .default()
-        let scriptURL = Bundle.module.url(forResource: "spatial-navigation", withExtension: "js")!
-        let script = try! String(contentsOf: scriptURL, encoding: .utf8)
-        configuration.userContentController.addUserScript(
-            WKUserScript(source: script, injectionTime: .atDocumentStart, forMainFrameOnly: true)
-        )
+        if profile.usesSpatialNavigation {
+            let scriptURL = Bundle.module.url(forResource: "spatial-navigation", withExtension: "js")!
+            let script = try! String(contentsOf: scriptURL, encoding: .utf8)
+            configuration.userContentController.addUserScript(
+                WKUserScript(source: script, injectionTime: .atDocumentStart, forMainFrameOnly: true)
+            )
+        }
         let webView = FocusingWebView(frame: .zero, configuration: configuration)
-        webView.customUserAgent = Self.safariUserAgent
+        webView.customUserAgent = profile.userAgent ?? Self.safariUserAgent
         webView.navigationDelegate = context.coordinator
-        webView.load(URLRequest(url: url))
+        webView.load(URLRequest(url: profile.url))
         return webView
     }
 
