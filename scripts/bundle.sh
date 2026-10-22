@@ -14,6 +14,15 @@ cp "$bin/CineKit" "$app/Contents/MacOS/CineKit"
 # Bundle.module looks for the SwiftPM resource bundle in Contents/Resources.
 cp -R "$bin/CineKit_CineKit.bundle" "$app/Contents/Resources/"
 
+# iconutil and sips ship with macOS, so the icon builds without Xcode.
+iconset="$(mktemp -d)/AppIcon.iconset"
+mkdir -p "$iconset"
+for size in 16 32 128 256 512; do
+    sips -z $size $size assets/AppIcon.png --out "$iconset/icon_${size}x${size}.png" >/dev/null
+    sips -z $((size * 2)) $((size * 2)) assets/AppIcon.png --out "$iconset/icon_${size}x${size}@2x.png" >/dev/null
+done
+iconutil -c icns "$iconset" -o "$app/Contents/Resources/AppIcon.icns"
+
 cat > "$app/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -21,6 +30,8 @@ cat > "$app/Contents/Info.plist" <<PLIST
 <dict>
     <key>CFBundleExecutable</key>
     <string>CineKit</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
     <key>CFBundleIdentifier</key>
     <string>dev.guilhermemendes.CineKit</string>
     <key>CFBundleName</key>

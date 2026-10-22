@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/AppIcon.png" width="160" alt="Ícone do cine-kit"></p>
+
 # cine-kit
 
 App para macOS que transforma o Mac numa TV box: uma interface de sala de estar, pensada para ser usada à distância (sofá + TV), com navegação por controle remoto/teclado e foco em mídia.
@@ -20,6 +22,7 @@ O escopo detalhado e as escolhas técnicas são registrados em [`architecture/`]
 ├── AGENTS.md          # Instruções para agentes de IA (Claude Code, Codex, Cursor, etc.)
 ├── CLAUDE.md          # Aponta para AGENTS.md
 ├── Package.swift      # Swift Package (ADR 0006)
+├── assets/            # Ícone do app (AppIcon.png)
 ├── Sources/
 │   ├── CineKitCore/   # Lógica pura, sem SwiftUI/AppKit/WebKit
 │   └── CineKit/       # App (UI)
