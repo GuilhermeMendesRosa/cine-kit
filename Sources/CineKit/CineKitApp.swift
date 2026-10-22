@@ -14,7 +14,6 @@ struct CineKitApp: App {
                 .environment(appDelegate.androidRuntime)
                 .environment(appDelegate.remoteServer)
                 .environment(appDelegate.inputMode)
-                .preferredColorScheme(.dark)
         }
     }
 }

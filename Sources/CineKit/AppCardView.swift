@@ -13,6 +13,12 @@ struct AppCardView: View {
         artwork
             .frame(width: 280, height: 158)
             .clipShape(shape)
+            .overlay {
+                // Specular edge, as on tvOS; content gets no glass.
+                shape
+                    .strokeBorder(LinearGradient(colors: [.white.opacity(0.9), .white.opacity(0.15)], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 3)
+                    .opacity(isFocused ? 1 : 0)
+            }
             .shadow(color: .black.opacity(isFocused ? 0.35 : 0.1), radius: isFocused ? 20 : 4, y: isFocused ? 12 : 2)
             .scaleEffect(isFocused && !reduceMotion ? 1.1 : 1)
             .animation(reduceMotion ? nil : .spring(duration: 0.25), value: isFocused)

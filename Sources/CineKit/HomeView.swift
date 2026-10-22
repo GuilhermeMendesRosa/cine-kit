@@ -8,11 +8,17 @@ struct HomeView: View {
     let onOpenSettings: () -> Void
 
     @Environment(InputMode.self) private var inputMode
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @FocusState private var hasKeyboardFocus: Bool
 
     var body: some View {
         VStack(spacing: 48) {
             HStack {
+                TimelineView(.everyMinute) { context in
+                    Text(context.date, format: .dateTime.hour().minute())
+                        .font(.largeTitle.bold())
+                        .monospacedDigit()
+                }
                 Spacer()
                 GlassEffectContainer {
                     Button(action: onOpenSettings) {
@@ -28,12 +34,16 @@ struct HomeView: View {
 
             Spacer()
 
-            shelf
+            VStack(spacing: 32) {
+                shelf
+                // A space keeps the layout still while the settings button has the focus.
+                Text(focusedApp?.name ?? " ")
+                    .font(.title.bold())
+            }
         }
         .padding(.vertical, 80)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.white.ignoresSafeArea())
-        .environment(\.colorScheme, .light)
+        .background { background }
         .focusable()
         .focusEffectDisabled()
         .focused($hasKeyboardFocus)
@@ -51,6 +61,20 @@ struct HomeView: View {
         }
     }
 
+    private var focusedApp: StreamingApp? {
+        guard case .card(let index) = focus.target, apps.indices.contains(index) else { return nil }
+        return apps[index]
+    }
+
+    /// Tinted by the last focused app, as the Apple TV home takes the color of the focused item.
+    private var background: some View {
+        let color = apps.indices.contains(focus.lastCard) ? Color(hex: apps[focus.lastCard].colorHex) : .clear
+        return LinearGradient(colors: [color.opacity(0.35), color.opacity(0)], startPoint: .top, endPoint: .bottom)
+            .background(Color(nsColor: .windowBackgroundColor))
+            .ignoresSafeArea()
+            .animation(reduceMotion ? nil : .easeInOut(duration: 0.4), value: focus.lastCard)
+    }
+
     private var shelf: some View {
         ScrollViewReader { proxy in
             ScrollView(.horizontal, showsIndicators: false) {
@@ -65,7 +89,7 @@ struct HomeView: View {
                 }
                 .padding(20)
             }
-            .background(RoundedRectangle(cornerRadius: 40).fill(Color(white: 0.9)))
+            .background(RoundedRectangle(cornerRadius: 40).fill(.fill.tertiary))
             .clipShape(RoundedRectangle(cornerRadius: 40))
             .padding(.horizontal, 80)
             .onAppear { proxy.scrollTo(focus.lastCard, anchor: .center) }

@@ -12,15 +12,20 @@ struct RootView: View {
     @State private var loadError: String?
     @State private var shelfFocus = ShelfFocusState(target: .card(0), lastCard: 0)
     @State private var escapeMonitor: Any?
+    @AppStorage("appTheme") private var theme = AppTheme.dark
 
     var body: some View {
         Group {
             if let openApp {
-                if openApp.androidPackage != nil {
-                    AndroidScreen(app: openApp) { self.openApp = nil }
-                } else {
-                    ServiceScreen(app: openApp) { self.openApp = nil }
+                Group {
+                    if openApp.androidPackage != nil {
+                        AndroidScreen(app: openApp) { self.openApp = nil }
+                    } else {
+                        ServiceScreen(app: openApp) { self.openApp = nil }
+                    }
                 }
+                // Media screens stay dark whatever the theme (ADR 0013).
+                .environment(\.colorScheme, .dark)
             } else if isShowingSettings {
                 SettingsView()
             } else {
@@ -57,6 +62,8 @@ struct RootView: View {
         .onDisappear {
             if let escapeMonitor { NSEvent.removeMonitor(escapeMonitor) }
         }
+        // The app's appearance also reaches sheets, alerts and panels.
+        .onChange(of: theme, initial: true) { NSApp.appearance = $1.appearance }
     }
 
     private func closeSettings() {
