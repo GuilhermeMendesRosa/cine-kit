@@ -102,7 +102,7 @@ struct HomeView: View {
     }
 }
 
-private extension MoveDirection {
+extension MoveDirection {
     init(_ command: MoveCommandDirection) {
         switch command {
         case .up: self = .up

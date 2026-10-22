@@ -51,6 +51,15 @@ public final class AppCatalogStore {
         try save()
     }
 
+    /// Moves the app `offset` places in the order of the home; past the ends it stops there.
+    public func move(id: StreamingApp.ID, by offset: Int) throws {
+        guard let index = apps.firstIndex(where: { $0.id == id }) else { return }
+        let destination = min(max(index + offset, 0), apps.count - 1)
+        guard destination != index else { return }
+        apps.insert(apps.remove(at: index), at: destination)
+        try save()
+    }
+
     public func restoreDefaults() throws {
         apps = DefaultApps.all + apps.filter { !$0.isDefault }
         try save()

@@ -98,4 +98,29 @@ struct AppCatalogStoreTests {
         #expect(throws: (any Error).self) { try store.add(custom) }
         #expect(store.apps.last == custom)
     }
+
+    @Test func moveDownPersistsAcrossInstances() throws {
+        try makeStore().move(id: DefaultApps.all[0].id, by: 1)
+        let ids = try makeStore().apps.map(\.id)
+        #expect(ids.prefix(2) == [DefaultApps.all[1].id, DefaultApps.all[0].id])
+    }
+
+    @Test func moveUpOnFirstIsNoOp() throws {
+        let store = try makeStore()
+        try store.move(id: DefaultApps.all[0].id, by: -1)
+        #expect(store.apps == DefaultApps.all)
+    }
+
+    @Test func moveBeyondEndClamps() throws {
+        let store = try makeStore()
+        try store.move(id: DefaultApps.all[0].id, by: 100)
+        #expect(store.apps.last == DefaultApps.all[0])
+        #expect(store.apps.count == DefaultApps.all.count)
+    }
+
+    @Test func moveUnknownIdIsNoOp() throws {
+        let store = try makeStore()
+        try store.move(id: "missing", by: 1)
+        #expect(store.apps == DefaultApps.all)
+    }
 }
