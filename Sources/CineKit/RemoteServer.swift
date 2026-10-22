@@ -28,6 +28,7 @@ final class RemoteServer {
         126: String(UnicodeScalar(NSUpArrowFunctionKey)!),
         36: "\r",
         49: " ",
+        51: "\u{7F}",
         53: "\u{1B}",
     ]
 
@@ -118,6 +119,7 @@ final class RemoteServer {
         }
         if let button = response.button { press(button) }
         if let pointer = response.pointer { SyntheticPointer.perform(pointer) }
+        if let text = response.text { type(text) }
         return response
     }
 
@@ -133,12 +135,27 @@ final class RemoteServer {
         }
     }
 
+    /// Types like a keyboard: one key press per character, which web views, text fields and Android all take (ADR 0016).
+    private func type(_ text: String) {
+        for character in text {
+            for isDown in [true, false] {
+                post(keyCode: 0, characters: String(character), flags: [], isDown: isDown, isRepeat: false)
+            }
+        }
+    }
+
     private func post(_ keystroke: Keystroke) {
-        let characters = Self.characters[keystroke.keyCode] ?? ""
         var flags: NSEvent.ModifierFlags = keystroke.command ? .command : []
         if (123...126).contains(keystroke.keyCode) { flags.formUnion([.function, .numericPad]) }
+        post(
+            keyCode: keystroke.keyCode, characters: Self.characters[keystroke.keyCode] ?? "", flags: flags,
+            isDown: keystroke.isDown, isRepeat: keystroke.isRepeat
+        )
+    }
+
+    private func post(keyCode: UInt16, characters: String, flags: NSEvent.ModifierFlags, isDown: Bool, isRepeat: Bool) {
         guard let event = NSEvent.keyEvent(
-            with: keystroke.isDown ? .keyDown : .keyUp,
+            with: isDown ? .keyDown : .keyUp,
             location: .zero,
             modifierFlags: flags,
             timestamp: ProcessInfo.processInfo.systemUptime,
@@ -146,8 +163,8 @@ final class RemoteServer {
             context: nil,
             characters: characters,
             charactersIgnoringModifiers: characters,
-            isARepeat: keystroke.isRepeat,
-            keyCode: keystroke.keyCode
+            isARepeat: isRepeat,
+            keyCode: keyCode
         ) else { return }
         NSApp.postEvent(event, atStart: false)
     }

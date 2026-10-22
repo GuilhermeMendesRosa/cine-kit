@@ -8,13 +8,19 @@ public struct RemoteResponse: Equatable, Sendable {
     public let button: RemoteButton?
     /// The touchpad event to act on, for an accepted pointer request.
     public let pointer: RemotePointerEvent?
+    /// The text to type, for an accepted text request (ADR 0016).
+    public let text: String?
 
-    init(status: Int, headers: [String: String] = [:], body: Data = Data(), button: RemoteButton? = nil, pointer: RemotePointerEvent? = nil) {
+    init(
+        status: Int, headers: [String: String] = [:], body: Data = Data(),
+        button: RemoteButton? = nil, pointer: RemotePointerEvent? = nil, text: String? = nil
+    ) {
         self.status = status
         self.headers = headers
         self.body = body
         self.button = button
         self.pointer = pointer
+        self.text = text
     }
 
     /// The bytes to send back, keeping the connection open.
@@ -28,7 +34,7 @@ public struct RemoteResponse: Equatable, Sendable {
     }
 }
 
-/// Routes a request of the web remote: the API and the app's static files (ADR 0003, protocol v1, and ADR 0012).
+/// Routes a request of the web remote: the API and the app's static files (ADR 0003, protocol v1, and ADRs 0012 and 0016).
 public enum RemoteRoute {
     private static let contentTypes = [
         "html": "text/html; charset=utf-8",
@@ -43,6 +49,13 @@ public enum RemoteRoute {
         let button: String
     }
 
+    private struct Text: Decodable {
+        let text: String
+    }
+
+    /// Longer texts are rejected: typing on the phone sends a few characters at a time.
+    static let maxTextLength = 256
+
     /// `clickSound` is the remote's click sound for the open app (ADR 0015). `staticFile` reads a file of the web app
     /// by its path relative to the app's folder.
     public static func response(
@@ -53,6 +66,9 @@ public enum RemoteRoute {
         }
         if request.path == "/api/pointer", request.method == "POST" {
             return pointer(request, token: token)
+        }
+        if request.path == "/api/text", request.method == "POST" {
+            return text(request, token: token)
         }
         if request.path == "/api/state", request.method == "GET" {
             guard authorized(request, token: token) else { return RemoteResponse(status: 401) }
@@ -77,6 +93,16 @@ public enum RemoteRoute {
         guard authorized(request, token: token) else { return RemoteResponse(status: 401) }
         guard let event = try? JSONDecoder().decode(RemotePointerEvent.self, from: request.body) else { return RemoteResponse(status: 400) }
         return RemoteResponse(status: 204, pointer: event)
+    }
+
+    private static func text(_ request: RemoteHTTPRequest, token: String) -> RemoteResponse {
+        guard authorized(request, token: token) else { return RemoteResponse(status: 401) }
+        guard let text = try? JSONDecoder().decode(Text.self, from: request.body).text,
+              !text.isEmpty, text.count <= maxTextLength,
+              !text.unicodeScalars.contains(where: { $0.properties.generalCategory == .control }) else {
+            return RemoteResponse(status: 400)
+        }
+        return RemoteResponse(status: 204, text: text)
     }
 
     private static func authorized(_ request: RemoteHTTPRequest, token: String) -> Bool {

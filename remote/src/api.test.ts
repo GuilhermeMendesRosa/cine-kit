@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { fetchState, pointer, press } from './api'
+import { fetchState, pointer, press, typeText } from './api'
 
 describe('press', () => {
   it('is ok on 204', async () => {
@@ -68,5 +68,17 @@ describe('fetchState', () => {
     expect(url).toBe('/api/state')
     expect(init.method ?? 'GET').toBe('GET')
     expect(new Headers(init.headers).get('Authorization')).toBe('Bearer abc')
+  })
+})
+
+describe('typeText', () => {
+  it('sends the token and the text', async () => {
+    const fetch = vi.fn().mockResolvedValue(new Response(null, { status: 204 }))
+    expect(await typeText('ação', { token: 'abc', fetch })).toBe('ok')
+    const [url, init] = fetch.mock.calls[0]
+    expect(url).toBe('/api/text')
+    expect(init.method).toBe('POST')
+    expect(new Headers(init.headers).get('Authorization')).toBe('Bearer abc')
+    expect(JSON.parse(init.body)).toEqual({ text: 'ação' })
   })
 })

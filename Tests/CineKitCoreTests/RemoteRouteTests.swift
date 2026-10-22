@@ -23,6 +23,11 @@ struct RemoteRouteTests {
         return try respond("POST /api/pointer HTTP/1.1\r\n\(header)Content-Length: \(body.utf8.count)\r\n\r\n\(body)")
     }
 
+    private func text(_ body: String, authorization: String? = "Bearer secret") throws -> RemoteResponse {
+        let header = authorization.map { "Authorization: \($0)\r\n" } ?? ""
+        return try respond("POST /api/text HTTP/1.1\r\n\(header)Content-Length: \(body.utf8.count)\r\n\r\n\(body)")
+    }
+
     @Test func rootServesIndex() throws {
         let response = try respond("GET /?token=abc HTTP/1.1\r\n\r\n")
         #expect(response.status == 200)
@@ -120,5 +125,28 @@ struct RemoteRouteTests {
         #expect(try pointer(#"{"type":"move","dx":4001,"dy":0}"#).status == 400)
         #expect(try pointer(#"{"type":"scroll","dx":0,"dy":-4001}"#).status == 400)
         #expect(try pointer(#"{"type":"move","dx":1e999,"dy":0}"#).status == 400)
+    }
+
+    @Test func deletePressReturns204() throws {
+        #expect(try press(#"{"button":"delete"}"#).button == .delete)
+    }
+
+    @Test func textReturns204AndText() throws {
+        let response = try text(#"{"text":"ação 👍"}"#)
+        #expect(response.status == 204)
+        #expect(response.text == "ação 👍")
+    }
+
+    @Test func textWithoutTokenIs401() throws {
+        #expect(try text(#"{"text":"a"}"#, authorization: nil).status == 401)
+        #expect(try text(#"{"text":"a"}"#, authorization: "Bearer wrong").status == 401)
+    }
+
+    @Test func emptyLongOrControlTextIs400() throws {
+        #expect(try text(#"{"text":""}"#).status == 400)
+        #expect(try text(#"{"text":"\#(String(repeating: "a", count: 257))"}"#).status == 400)
+        #expect(try text(#"{"text":"a\nb"}"#).status == 400)
+        #expect(try text(#"{"text":"\u001b"}"#).status == 400)
+        #expect(try text(#"{"txt":"a"}"#).text == nil)
     }
 }

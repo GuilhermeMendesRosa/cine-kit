@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { fetchState, pointer, press, type Button, type PressResult } from './api'
+import { fetchState, pointer, press, typeText, type Button, type PressResult } from './api'
 import { createClickSound } from './clickSound'
 import { haptic } from './haptics'
 import { startHold } from './holdRepeat'
 import { clearToken, resolveToken } from './pairing'
 import { createPointerQueue } from './pointerQueue'
+import { createTextQueue, type TextQueue } from './textQueue'
 import { Touchpad } from './Touchpad'
 import './App.css'
 
@@ -59,8 +60,12 @@ export default function App() {
     () => token ? createPointerQueue((event) => pointer(event, { token }), handleResult) : null,
     [token],
   )
+  const textQueue = useMemo(
+    () => token ? createTextQueue((text) => typeText(text, { token }), handleResult) : null,
+    [token],
+  )
 
-  if (!token || !queue) {
+  if (!token || !queue || !textQueue) {
     return (
       <main className="message">
         <h1>{expired ? 'Pareamento expirou' : 'cine-kit'}</h1>
@@ -82,17 +87,7 @@ export default function App() {
         </div>
         <div className="actions">
           <Key button="back" label="Voltar" onPress={send}><BackIcon /></Key>
-          <button
-            type="button"
-            className="key key-click glass"
-            aria-label="Clique"
-            onPointerDown={() => {
-              feedback()
-              queue.click()
-            }}
-          >
-            <ClickIcon />
-          </button>
+          <KeyboardKey queue={textQueue} onPress={send} />
           <Key button="playPause" label="Pause" onPress={send}><PlayPauseIcon /></Key>
         </div>
       </div>
@@ -146,6 +141,86 @@ function Key({ button, label, onPress, children }: {
   )
 }
 
+/** Opens the phone's keyboard; each letter goes to the Mac as it is typed, Delete and Enter as keys (ADR 0016). */
+function KeyboardKey({ queue, onPress }: { queue: TextQueue; onPress: (button: Button) => void }) {
+  const input = useRef<HTMLInputElement>(null)
+  const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    const field = input.current!
+
+    // Text leaves right away and the field stays empty, so the phone has nothing to autocorrect.
+    function flush() {
+      if (field.value === '') return
+      queue.type(field.value)
+      field.value = ''
+    }
+
+    function beforeInput(event: InputEvent) {
+      if (event.inputType === 'deleteContentBackward' && field.value === '') {
+        event.preventDefault()
+        onPress('delete')
+      }
+    }
+
+    function typed(event: Event) {
+      if (!(event as InputEvent).isComposing) flush()
+    }
+
+    function keyDown(event: KeyboardEvent) {
+      if (event.key !== 'Enter' || event.isComposing) return
+      event.preventDefault()
+      flush()
+      onPress('ok')
+      field.blur()
+    }
+
+    field.addEventListener('beforeinput', beforeInput)
+    field.addEventListener('input', typed)
+    field.addEventListener('compositionend', flush)
+    field.addEventListener('keydown', keyDown)
+    return () => {
+      field.removeEventListener('beforeinput', beforeInput)
+      field.removeEventListener('input', typed)
+      field.removeEventListener('compositionend', flush)
+      field.removeEventListener('keydown', keyDown)
+    }
+  }, [queue, onPress])
+
+  return (
+    <>
+      <button
+        type="button"
+        className="key key-keyboard"
+        aria-label={open ? 'Fechar teclado' : 'Teclado'}
+        aria-pressed={open}
+        // Keeps the focus on the field, so a second tap closes the keyboard instead of reopening it.
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={() => {
+          feedback()
+          if (open) input.current!.blur()
+          else input.current!.focus()
+        }}
+      >
+        <KeyboardIcon />
+      </button>
+      <input
+        ref={input}
+        className="keyboard-field"
+        type="text"
+        aria-label="Texto para o Mac"
+        autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="off"
+        spellCheck={false}
+        enterKeyHint="send"
+        onFocus={() => setOpen(true)}
+        onBlur={() => setOpen(false)}
+      />
+    </>
+  )
+}
+
 // Icons drawn after SF Symbols, in the text color.
 function Icon({ children, rotate = 0 }: { children: ReactNode; rotate?: number }) {
   return (
@@ -170,11 +245,11 @@ function HomeIcon() {
   return <Icon><path d="M3 11 12 3.5 21 11" /><path d="M5.5 9v11h13V9" /></Icon>
 }
 
-function ClickIcon() {
+function KeyboardIcon() {
   return (
     <Icon>
-      <path d="m9 9 5 12 1.8-5.2L21 14Z" fill="currentColor" />
-      <path d="M7.2 2.2 8 5.1M5.1 8 2.2 7.2M14 4.1 12 6M6 12l-1.9 2" />
+      <rect x="2.5" y="6" width="19" height="12" rx="2.5" />
+      <path d="M6.5 10h.01M10 10h.01M14 10h.01M17.5 10h.01M8 14h8" />
     </Icon>
   )
 }

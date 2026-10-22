@@ -18,6 +18,10 @@ struct RemoteKeyMapTests {
         #expect(RemoteKeyMap.keystrokes(for: .playPause) == press(49))
     }
 
+    @Test func deleteIsDelete() {
+        #expect(RemoteKeyMap.keystrokes(for: .delete) == press(51))
+    }
+
     @Test func backIsEscape() {
         #expect(RemoteKeyMap.keystrokes(for: .back) == press(53))
     }

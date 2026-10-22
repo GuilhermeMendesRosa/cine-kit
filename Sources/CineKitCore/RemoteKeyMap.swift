@@ -15,6 +15,7 @@ public enum RemoteKeyMap {
         .up: 126, // ↑
         .ok: 36, // Return
         .playPause: 49, // Space
+        .delete: 51, // Delete
     ]
     private static let escapeKeyCode: UInt16 = 53
 

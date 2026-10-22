@@ -1,6 +1,6 @@
 export type Button =
   | 'up' | 'down' | 'left' | 'right' | 'ok' | 'back' | 'home'
-  | 'playPause' | 'volumeUp' | 'volumeDown' | 'mute'
+  | 'playPause' | 'volumeUp' | 'volumeDown' | 'mute' | 'delete'
 
 /** A touchpad event; scroll deltas are the finger's, which the content follows (ADR 0012). */
 export type PointerEvent = { type: 'move' | 'scroll'; dx: number; dy: number } | { type: 'click' }
@@ -19,6 +19,11 @@ export function press(button: Button, options: Options): Promise<PressResult> {
 /** Sends a touchpad event to the Mac (ADR 0012). */
 export function pointer(event: PointerEvent, options: Options): Promise<PressResult> {
   return post('/api/pointer', event, options)
+}
+
+/** Types text on the Mac, like its keyboard (ADR 0016). */
+export function typeText(text: string, options: Options): Promise<PressResult> {
+  return post('/api/text', { text }, options)
 }
 
 /** Reads the Mac's state for the remote: whether the open app wants the click sound (ADR 0015). */
