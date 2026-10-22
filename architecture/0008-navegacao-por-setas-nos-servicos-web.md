@@ -3,7 +3,7 @@
 - **Status:** Aceito
 - **Data:** 2026-10-22
 - **Substitui:** —
-- **Substituído por:** [0010](0010-youtube-com-ui-de-tv-na-webview.md) (só o YouTube)
+- **Substituído por:** [0010](0010-youtube-com-ui-de-tv-na-webview.md) (só o YouTube), [0012](0012-controle-unico-com-paridade-de-teclado-e-mouse.md) (Esc)
 
 ## Contexto
 

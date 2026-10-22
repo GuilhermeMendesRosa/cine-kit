@@ -3,7 +3,7 @@
 - **Status:** Aceito
 - **Data:** 2026-10-21
 - **Substitui:** —
-- **Substituído por:** —
+- **Substituído por:** [0013](0013-tema-e-configuracoes-navegaveis.md) (só as Configurações)
 
 ## Contexto
 

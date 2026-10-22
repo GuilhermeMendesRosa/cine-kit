@@ -36,3 +36,5 @@ O objetivo é que qualquer pessoa — ou agente de IA — entenda **por que** o 
 | [0009](0009-video-android-pelo-framebuffer-do-emulador.md) | Vídeo dos apps Android pelo framebuffer do emulador | Aceito | 2026-10-22 |
 | [0010](0010-youtube-com-ui-de-tv-na-webview.md) | YouTube com a UI de TV na webview | Aceito | 2026-10-22 |
 | [0011](0011-app-web-do-controle-em-react.md) | App web do controle em React | Aceito | 2026-10-22 |
+| [0012](0012-controle-unico-com-paridade-de-teclado-e-mouse.md) | Controle único com paridade de teclado e mouse | Aceito | 2026-10-22 |
+| [0013](0013-tema-e-configuracoes-navegaveis.md) | Tema claro/escuro e Configurações navegáveis por setas | Aceito | 2026-10-22 |
