@@ -1,5 +1,6 @@
 import AppKit
 import CineKitCore
+import CoreImage.CIFilterBuiltins
 import Network
 import Observation
 import os
@@ -47,6 +48,17 @@ final class RemoteServer {
     var pairingURL: URL? {
         guard let name = SCDynamicStoreCopyLocalHostName(nil) as String? else { return nil }
         return RemotePairing.url(host: "\(name).local", port: Self.port, token: token)
+    }
+
+    /// Nil when the Mac has no Bonjour name.
+    var pairingQRCode: NSImage? { pairingURL.flatMap(Self.qrCode(for:)) }
+
+    private static func qrCode(for url: URL) -> NSImage? {
+        let filter = CIFilter.qrCodeGenerator()
+        filter.message = Data(url.absoluteString.utf8)
+        guard let output = filter.outputImage,
+              let image = CIContext().createCGImage(output, from: output.extent) else { return nil }
+        return NSImage(cgImage: image, size: output.extent.size)
     }
 
     func start() {

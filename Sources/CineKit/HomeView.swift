@@ -8,36 +8,41 @@ struct HomeView: View {
     let onOpenSettings: () -> Void
 
     @Environment(InputMode.self) private var inputMode
+    @Environment(RemoteServer.self) private var remoteServer
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @FocusState private var hasKeyboardFocus: Bool
 
     var body: some View {
         VStack(spacing: 48) {
-            HStack {
+            HStack(alignment: .top) {
                 TimelineView(.everyMinute) { context in
                     Text(context.date, format: .dateTime.hour().minute())
                         .font(.largeTitle.bold())
                         .monospacedDigit()
                 }
                 Spacer()
-                let isFocused = focus.target == .settings
-                let shape = RoundedRectangle(cornerRadius: 20)
-                Button(action: onOpenSettings) {
-                    Image(systemName: "gearshape.fill")
-                        .font(.largeTitle)
-                        .foregroundStyle(isFocused ? .black : .primary)
-                        .padding(24)
-                        .contentShape(shape)
+                VStack(alignment: .trailing, spacing: 24) {
+                    let isFocused = focus.target == .settings
+                    let shape = RoundedRectangle(cornerRadius: 20)
+                    Button(action: onOpenSettings) {
+                        Image(systemName: "gearshape.fill")
+                            .font(.largeTitle)
+                            .foregroundStyle(isFocused ? .black : .primary)
+                            .padding(24)
+                            .contentShape(shape)
+                    }
+                    .buttonStyle(.plain)
+                    // A solid white plate, lift and shadow make the focus obvious over any background tint, as on tvOS.
+                    // The plate fades over a glass that never changes: morphing or interactive glass slides sideways.
+                    .background(shape.fill(.white).opacity(isFocused ? 1 : 0))
+                    .glassEffect(.regular, in: shape)
+                    .shadow(color: .black.opacity(isFocused ? 0.35 : 0), radius: 20, y: 12)
+                    .scaleEffect(isFocused && !reduceMotion ? 1.1 : 1)
+                    .animation(reduceMotion ? nil : .spring(duration: 0.25), value: isFocused)
+                    .onHover { if $0, inputMode.kind == .pointer { focus.target = .settings } }
+
+                    pairingCode
                 }
-                .buttonStyle(.plain)
-                // A solid white plate, lift and shadow make the focus obvious over any background tint, as on tvOS.
-                // The plate fades over a glass that never changes: morphing or interactive glass slides sideways.
-                .background(shape.fill(.white).opacity(isFocused ? 1 : 0))
-                .glassEffect(.regular, in: shape)
-                .shadow(color: .black.opacity(isFocused ? 0.35 : 0), radius: 20, y: 12)
-                .scaleEffect(isFocused && !reduceMotion ? 1.1 : 1)
-                .animation(reduceMotion ? nil : .spring(duration: 0.25), value: isFocused)
-                .onHover { if $0, inputMode.kind == .pointer { focus.target = .settings } }
             }
             .padding(.horizontal, 80)
 
@@ -73,6 +78,26 @@ struct HomeView: View {
     private var focusedApp: StreamingApp? {
         guard case .card(let index) = focus.target, apps.indices.contains(index) else { return nil }
         return apps[index]
+    }
+
+    /// Not focusable: it is only there to be scanned. The white plate keeps it readable by the camera in the dark theme.
+    @ViewBuilder
+    private var pairingCode: some View {
+        if remoteServer.state == .running, let qrCode = remoteServer.pairingQRCode {
+            VStack(spacing: 12) {
+                Image(nsImage: qrCode)
+                    .interpolation(.none)
+                    .resizable()
+                    .frame(width: 160, height: 160)
+                    .padding(12)
+                    .background(RoundedRectangle(cornerRadius: 16).fill(.white))
+                Text("Controle remoto")
+                    .font(.headline)
+                    .foregroundStyle(.secondary)
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("QR Code do controle remoto")
+        }
     }
 
     /// Tinted by the last focused app, as the Apple TV home takes the color of the focused item.

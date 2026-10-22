@@ -1,6 +1,5 @@
 import AppKit
 import CineKitCore
-import CoreImage.CIFilterBuiltins
 import os
 import SwiftUI
 import UniformTypeIdentifiers
@@ -283,7 +282,7 @@ struct SettingsView: View {
             if case .failed(let reason) = remoteServer.state {
                 Text("Controle indisponível: \(reason)")
                     .font(.title2)
-            } else if let url = remoteServer.pairingURL, let qrCode = Self.qrCode(for: url) {
+            } else if let url = remoteServer.pairingURL, let qrCode = remoteServer.pairingQRCode {
                 Image(nsImage: qrCode)
                     .interpolation(.none)
                     .resizable()
@@ -299,14 +298,6 @@ struct SettingsView: View {
                 }
             }
         }
-    }
-
-    private static func qrCode(for url: URL) -> NSImage? {
-        let filter = CIFilter.qrCodeGenerator()
-        filter.message = Data(url.absoluteString.utf8)
-        guard let output = filter.outputImage,
-              let image = CIContext().createCGImage(output, from: output.extent) else { return nil }
-        return NSImage(cgImage: image, size: output.extent.size)
     }
 
     private func addApk(with runtime: AndroidRuntime) {
