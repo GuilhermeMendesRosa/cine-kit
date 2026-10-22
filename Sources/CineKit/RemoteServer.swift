@@ -103,6 +103,7 @@ final class RemoteServer {
             Self.logger.error("Rejected remote press: \(String(decoding: request.body, as: UTF8.self), privacy: .public)")
         }
         if let button = response.button { press(button) }
+        if let pointer = response.pointer { SyntheticPointer.perform(pointer) }
         return response
     }
 
