@@ -25,6 +25,8 @@ public struct AndroidSDK: Sendable {
     public var scrcpyServer: URL { dataDirectory.appending(path: "scrcpy-server") }
     public var systemImage: URL { root.appending(path: AndroidAVD.systemImage) }
     public var avd: URL { avdHome.appending(path: "\(avdName).avd") }
+    /// The stock ramdisk plus the `AndroidIdentity` props, passed to the emulator in `-ramdisk`.
+    public var identityRamdisk: URL { dataDirectory.appending(path: "identity-ramdisk.img") }
 
     public var isAvailable: Bool {
         [adb, emulator, aapt2, scrcpyServer, systemImage, avd].allSatisfy {

@@ -156,4 +156,40 @@ struct AndroidRuntimeTests {
             "emulator -avd cinekit-tv -no-window -no-boot-anim -share-vid -feature -HardwareDecoder -skin 3840x2160 -prop qemu.sf.lcd_density=640",
         ])
     }
+
+    @Test func startWithIdentityAddsTheRamdiskAndSerial() async throws {
+        var identity = AndroidIdentity.profiles[0]
+        identity.serial = "0123456789ABCDEF"
+        runtime.identity = identity
+
+        try await runtime.start(resolution: .hd1080)
+
+        #expect(runner.launched.first?.hasSuffix("-ramdisk /data/identity-ramdisk.img -android-serialno 0123456789ABCDEF") == true)
+    }
+
+    @Test func applyBacksUpApksWipesWithTheNewRamdiskAndReinstalls() async throws {
+        let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let sdk = AndroidSDK(root: directory.appending(path: "sdk"), dataDirectory: directory)
+        try FileManager.default.createDirectory(at: sdk.systemImage, withIntermediateDirectories: true)
+        try Data([1, 2, 3, 4]).write(to: sdk.systemImage.appending(path: "ramdisk.img"))
+        let runtime = AndroidRuntime(sdk: sdk, runner: runner, sleep: { _ in })
+        runner.respond("devices", "List of devices attached\nemulator-5554\tdevice\n\n", "List of devices attached\nemulator-5554\tdevice\n\n", "List of devices attached\n\n")
+        runner.respond("-s emulator-5554 shell getprop sys.boot_completed", "1\n")
+        runner.respond("-s emulator-5554 shell pm list packages -3", "package:org.jellyfin.androidtv\n")
+        runner.respond("-s emulator-5554 shell pm path org.jellyfin.androidtv", "package:/data/app/x/base.apk\npackage:/data/app/x/split_config.arm64_v8a.apk\n")
+        var identity = AndroidIdentity.profiles[1]
+        identity.serial = "0123456789ABCDEF"
+
+        try await runtime.apply(identity, resolution: .hd1080)
+
+        let backup = directory.appending(path: "identity-apks/org.jellyfin.androidtv").path(percentEncoded: false)
+        #expect(runner.calls.contains("adb -s emulator-5554 pull /data/app/x/base.apk \(backup)/base.apk"))
+        #expect(runner.calls.last == "adb -s emulator-5554 install-multiple -r \(backup)/base.apk \(backup)/split_config.arm64_v8a.apk")
+        #expect(runner.launched.last?.hasSuffix("-android-serialno 0123456789ABCDEF -wipe-data -no-snapshot-load") == true)
+        #expect(runtime.identity == identity)
+        let ramdisk = try Data(contentsOf: sdk.identityRamdisk)
+        #expect(ramdisk.prefix(4) == Data([1, 2, 3, 4]))
+        #expect(!FileManager.default.fileExists(atPath: directory.appending(path: "identity-apks").path(percentEncoded: false)))
+    }
 }

@@ -37,6 +37,8 @@ public final class AndroidRuntime {
     private let runner: CommandRunner
     private let sleep: (Duration) async throws -> Void
     private var emulator: RunningProcess?
+    /// When set, every boot reads as this device: `-ramdisk` carries its props (`AndroidIdentity`).
+    public var identity: AndroidIdentity?
 
     public init(sdk: AndroidSDK, runner: CommandRunner, sleep: @escaping (Duration) async throws -> Void = { try await Task.sleep(for: $0) }) {
         self.sdk = sdk
@@ -46,11 +48,19 @@ public final class AndroidRuntime {
 
     public func start(resolution: Resolution) async throws {
         if try await deviceState() == "device" { return }
+        emulator = try runner.launch(sdk.emulator, arguments(resolution: resolution))
+    }
+
+    private func arguments(resolution: Resolution) -> [String] {
         // The goldfish hardware decoders never return frames in a headless emulator; the software ones do.
-        emulator = try runner.launch(sdk.emulator, [
+        var arguments = [
             "-avd", sdk.avdName, "-no-window", "-no-boot-anim", "-share-vid", "-feature", "-HardwareDecoder",
             "-skin", resolution.skin, "-prop", "qemu.sf.lcd_density=\(resolution.density)",
-        ])
+        ]
+        if let identity {
+            arguments += ["-ramdisk", sdk.identityRamdisk.path(percentEncoded: false), "-android-serialno", identity.serial]
+        }
+        return arguments
     }
 
     /// Polls once per second; an offline emulator makes `adb shell` fail, which counts as not booted yet.
@@ -65,12 +75,53 @@ public final class AndroidRuntime {
 
     /// Changing the resolution needs a cold start: `-skin` only applies at launch.
     public func restart(resolution: Resolution) async throws {
+        try await stopAndWait()
+        try await start(resolution: resolution)
+    }
+
+    /// Without root, a new ANDROID_ID takes wiping the data, so the third-party APKs are pulled first and installed back.
+    /// The first boot is cold, since a snapshot would bring back the old props; later ones save and load snapshots as usual.
+    public func apply(_ identity: AndroidIdentity, resolution: Resolution) async throws {
+        try await ensureRunning(resolution: resolution)
+        try await waitUntilBooted()
+        let backup = sdk.dataDirectory.appending(path: "identity-apks")
+        try? FileManager.default.removeItem(at: backup)
+        defer { try? FileManager.default.removeItem(at: backup) }
+        var apps: [[String]] = []
+        for line in try await adb("shell", "pm", "list", "packages", "-3").split(separator: "\n") {
+            let package = line.trimmingCharacters(in: .whitespaces).replacing("package:", with: "")
+            guard !package.isEmpty else { continue }
+            let directory = backup.appending(path: package)
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            var apks: [String] = []
+            // Split APKs come as several lines: base.apk, split_config.*.apk.
+            for path in try await adb("shell", "pm", "path", package).split(separator: "\n") {
+                let remote = path.trimmingCharacters(in: .whitespaces).replacing("package:", with: "")
+                guard !remote.isEmpty else { continue }
+                let local = directory.appending(path: URL(filePath: remote).lastPathComponent).path(percentEncoded: false)
+                _ = try await adb("pull", remote, local)
+                apks.append(local)
+            }
+            apps.append(apks)
+        }
+        let stock = try Data(contentsOf: sdk.systemImage.appending(path: "ramdisk.img"))
+        try identity.ramdisk(appendingTo: stock).write(to: sdk.identityRamdisk)
+        self.identity = identity
+        try await stopAndWait()
+        emulator = try runner.launch(sdk.emulator, arguments(resolution: resolution) + ["-wipe-data", "-no-snapshot-load"])
+        try await waitUntilBooted(timeout: 300)
+        _ = try await adb("shell", "settings", "put", "global", "verifier_verify_adb_installs", "0")
+        for apks in apps where !apks.isEmpty {
+            _ = try await adb(["install-multiple", "-r"] + apks)
+        }
+    }
+
+    private func stopAndWait() async throws {
         stop()
         for _ in 0..<30 {
             guard try await deviceState() != nil else { break }
             try await sleep(.seconds(1))
         }
-        try await start(resolution: resolution)
     }
 
     /// Starts the emulator again when `adb devices` no longer lists it.
@@ -133,6 +184,10 @@ public final class AndroidRuntime {
     }
 
     private func adb(_ arguments: String...) async throws -> String {
+        try await adb(arguments)
+    }
+
+    private func adb(_ arguments: [String]) async throws -> String {
         try await runner.run(sdk.adb, ["-s", Self.serial] + arguments)
     }
 
