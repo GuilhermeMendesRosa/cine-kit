@@ -3,7 +3,7 @@
 - **Status:** Aceito
 - **Data:** 2026-10-22
 - **Substitui:** —
-- **Substituído por:** —
+- **Substituído por:** [0010](0010-youtube-com-ui-de-tv-na-webview.md) (só o YouTube)
 
 ## Contexto
 

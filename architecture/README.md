@@ -34,3 +34,4 @@ O objetivo é que qualquer pessoa — ou agente de IA — entenda **por que** o 
 | [0007](0007-camada-de-foco-da-home.md) | Camada de foco da home | Aceito | 2026-10-21 |
 | [0008](0008-navegacao-por-setas-nos-servicos-web.md) | Navegação por setas nos serviços web | Aceito | 2026-10-22 |
 | [0009](0009-video-android-pelo-framebuffer-do-emulador.md) | Vídeo dos apps Android pelo framebuffer do emulador | Aceito | 2026-10-22 |
+| [0010](0010-youtube-com-ui-de-tv-na-webview.md) | YouTube com a UI de TV na webview | Aceito | 2026-10-22 |
