@@ -39,12 +39,6 @@ describe('pointer', () => {
     expect(JSON.parse(init.body)).toEqual({ type: 'move', dx: 3, dy: -4 })
   })
 
-  it('sends an absolute point', async () => {
-    const fetch = vi.fn().mockResolvedValue(new Response(null, { status: 204 }))
-    await pointer({ type: 'moveTo', x: 0.25, y: 1 }, { token: 'abc', fetch })
-    expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({ type: 'moveTo', x: 0.25, y: 1 })
-  })
-
   it('is unauthorized on 401', async () => {
     const fetch = vi.fn().mockResolvedValue(new Response(null, { status: 401 }))
     expect(await pointer({ type: 'click' }, { token: 'abc', fetch })).toBe('unauthorized')

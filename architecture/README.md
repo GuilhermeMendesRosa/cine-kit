@@ -39,4 +39,4 @@ O objetivo é que qualquer pessoa — ou agente de IA — entenda **por que** o 
 | [0012](0012-controle-unico-com-paridade-de-teclado-e-mouse.md) | Controle único com paridade de teclado e mouse | Aceito | 2026-10-22 |
 | [0013](0013-tema-e-configuracoes-navegaveis.md) | Tema claro/escuro e Configurações navegáveis por setas | Aceito | 2026-10-22 |
 | [0014](0014-servicos-vivos-em-segundo-plano.md) | Serviços vivos em segundo plano | Aceito | 2026-10-22 |
-| [0015](0015-controle-absoluto-analogico-e-som.md) | Touchpad absoluto, faixa de rolagem analógica e som de clique por app | Proposto | 2026-10-22 |
+| [0015](0015-controle-absoluto-analogico-e-som.md) | Touchpad mais rápido, faixa de rolagem analógica e som de clique por app | Proposto | 2026-10-22 |

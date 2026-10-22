@@ -80,19 +80,6 @@ struct RemoteRouteTests {
         #expect(response.button == nil)
     }
 
-    @Test func pointerMoveToReturns204AndEvent() throws {
-        let response = try pointer(#"{"type":"moveTo","x":0.25,"y":1}"#)
-        #expect(response.status == 204)
-        #expect(response.pointer == .moveTo(x: 0.25, y: 1))
-    }
-
-    @Test func moveToOutOfRangeIs400() throws {
-        #expect(try pointer(#"{"type":"moveTo","x":-0.01,"y":0.5}"#).status == 400)
-        #expect(try pointer(#"{"type":"moveTo","x":0.5,"y":1.01}"#).status == 400)
-        #expect(try pointer(#"{"type":"moveTo","x":1e999,"y":0.5}"#).status == 400)
-        #expect(try pointer(#"{"type":"moveTo","x":0.5}"#).status == 400)
-    }
-
     @Test func stateReturnsClickSound() throws {
         let response = try respond("GET /api/state HTTP/1.1\r\nAuthorization: Bearer secret\r\n\r\n", clickSound: false)
         #expect(response.status == 200)

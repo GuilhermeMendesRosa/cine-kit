@@ -12,9 +12,6 @@ enum SyntheticPointer {
             let start = NSEvent.mouseLocation
             // The phone's y grows downwards; the screen's grows upwards.
             move(to: NSPoint(x: start.x + dx, y: start.y - dy))
-        case .moveTo(let x, let y):
-            guard let frame = (NSApp.windows.first?.screen ?? NSScreen.main)?.frame else { return }
-            move(to: NSPoint(x: frame.minX + x * frame.width, y: frame.maxY - y * frame.height))
         case .click:
             post(.leftMouseDown, at: NSEvent.mouseLocation)
             post(.leftMouseUp, at: NSEvent.mouseLocation)

@@ -5,10 +5,11 @@ import { createTouchpadGesture } from './touchpadGesture'
 
 const gripHalfHeight = 28
 
-/** The Mac's mouse: the 16:9 area is the screen in miniature, the strip on its right scrolls like a stick (ADR 0015). */
+/** The Mac's mouse: the panel moves and clicks (ADR 0012), the strip on its right scrolls like a stick (ADR 0015). */
 export function Touchpad({ queue, onTap }: { queue: PointerQueue; onTap: () => void }) {
   const gesture = useMemo(() => createTouchpadGesture({
-    onPosition: queue.moveTo,
+    onMove: queue.move,
+    onScroll: queue.scroll,
     onClick: () => {
       onTap()
       queue.click()
@@ -39,11 +40,9 @@ export function Touchpad({ queue, onTap }: { queue: PointerQueue; onTap: () => v
         aria-label="Touchpad"
         onPointerDown={(event) => {
           event.currentTarget.setPointerCapture(event.pointerId)
-          gesture.down(event.pointerId, event.clientX, event.clientY, event.timeStamp, event.currentTarget.getBoundingClientRect())
+          gesture.down(event.pointerId, event.clientX, event.clientY, event.timeStamp)
         }}
-        onPointerMove={(event) => gesture.move(
-          event.pointerId, event.clientX, event.clientY, event.timeStamp, event.currentTarget.getBoundingClientRect(),
-        )}
+        onPointerMove={(event) => gesture.move(event.pointerId, event.clientX, event.clientY, event.timeStamp)}
         onPointerUp={(event) => gesture.up(event.pointerId, event.timeStamp)}
         onPointerCancel={(event) => gesture.cancel(event.pointerId)}
       />

@@ -85,10 +85,10 @@ main {
 
 .touchpad {
   display: flex;
-  flex: none;
-  align-items: stretch;
+  flex: 1;
   width: 100%;
   max-width: 420px;
+  min-height: 160px;
   border-radius: 28px;
   overflow: hidden;
 }
@@ -100,7 +100,6 @@ main {
 
 .touchpad-area {
   flex: 1;
-  aspect-ratio: 16 / 9;
 }
 
 .touchpad-strip {

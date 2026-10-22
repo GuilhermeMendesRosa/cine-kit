@@ -1,55 +1,55 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createTouchpadGesture } from './touchpadGesture'
-
-const rect = { left: 10, top: 20, width: 160, height: 90 }
+import { accelerate, createTouchpadGesture } from './touchpadGesture'
 
 function gesture() {
-  const handlers = { onPosition: vi.fn(), onClick: vi.fn() }
+  const handlers = { onMove: vi.fn(), onScroll: vi.fn(), onClick: vi.fn() }
   return { handlers, touchpad: createTouchpadGesture(handlers) }
 }
 
 describe('createTouchpadGesture', () => {
-  it('touch moves the pointer to the normalized point', () => {
+  it('one finger moves with acceleration', () => {
     const { handlers, touchpad } = gesture()
-    touchpad.down(1, 50, 65, 0, rect)
-    expect(handlers.onPosition).toHaveBeenCalledWith(0.25, 0.5)
+    touchpad.down(1, 0, 0, 0)
+    touchpad.move(1, 10, 0, 10) // 1 px/ms: gain 3 + 4 × 1 = 7
+    expect(handlers.onMove).toHaveBeenCalledWith(70, 0)
+    expect(handlers.onScroll).not.toHaveBeenCalled()
   })
 
-  it('drag follows the finger, clamped to the area', () => {
+  it('quick short touch is a click', () => {
     const { handlers, touchpad } = gesture()
-    touchpad.down(1, 90, 65, 0, rect)
-    touchpad.move(1, 130, 110, 16, rect)
-    touchpad.move(1, 200, 0, 32, rect)
-    expect(handlers.onPosition.mock.calls).toEqual([[0.5, 0.5], [0.75, 1], [1, 0]])
-  })
-
-  it('quick short touch clicks after positioning', () => {
-    const { handlers, touchpad } = gesture()
-    touchpad.down(1, 90, 65, 0, rect)
-    touchpad.move(1, 93, 69, 50, rect)
+    touchpad.down(1, 100, 100, 0)
+    touchpad.move(1, 103, 104, 50)
     touchpad.up(1, 200)
     expect(handlers.onClick).toHaveBeenCalledTimes(1)
-    expect(handlers.onPosition.mock.invocationCallOrder[0]).toBeLessThan(handlers.onClick.mock.invocationCallOrder[0])
   })
 
   it('long or moved touch is not a click', () => {
     const { handlers, touchpad } = gesture()
-    touchpad.down(1, 90, 65, 0, rect)
+    touchpad.down(1, 0, 0, 0)
     touchpad.up(1, 300)
-    touchpad.down(1, 90, 65, 1000, rect)
-    touchpad.move(1, 110, 65, 1050, rect)
+    touchpad.down(1, 0, 0, 1000)
+    touchpad.move(1, 20, 0, 1050)
     touchpad.up(1, 1100)
     expect(handlers.onClick).not.toHaveBeenCalled()
   })
 
-  it('extra fingers are ignored', () => {
+  it('two fingers scroll', () => {
     const { handlers, touchpad } = gesture()
-    touchpad.down(1, 90, 65, 0, rect)
-    touchpad.down(2, 170, 110, 10, rect)
-    touchpad.move(2, 150, 100, 20, rect)
-    touchpad.up(2, 30)
-    touchpad.up(1, 100)
-    expect(handlers.onPosition.mock.calls).toEqual([[0.5, 0.5]])
-    expect(handlers.onClick).toHaveBeenCalledTimes(1)
+    touchpad.down(1, 0, 0, 0)
+    touchpad.down(2, 100, 0, 0)
+    touchpad.move(1, 0, 10, 16)
+    touchpad.move(2, 100, 10, 16)
+    touchpad.up(1, 50)
+    touchpad.up(2, 50)
+    // Each finger adds half of its movement, twice as fast as the finger.
+    expect(handlers.onScroll.mock.calls).toEqual([[0, 10], [0, 10]])
+    expect(handlers.onMove).not.toHaveBeenCalled()
+    expect(handlers.onClick).not.toHaveBeenCalled()
+  })
+})
+
+describe('accelerate', () => {
+  it('accelerate caps at 8x', () => {
+    expect(accelerate(100, -50, 1)).toEqual({ dx: 800, dy: -400 })
   })
 })

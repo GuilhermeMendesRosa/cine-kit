@@ -2,14 +2,8 @@ export type Button =
   | 'up' | 'down' | 'left' | 'right' | 'ok' | 'back' | 'home'
   | 'playPause' | 'volumeUp' | 'volumeDown' | 'mute'
 
-/**
- * A touchpad event; scroll deltas are the finger's, which the content follows (ADR 0012), and `moveTo` is a point
- * of the screen as a fraction 0...1 of its width and height (ADR 0015).
- */
-export type PointerEvent =
-  | { type: 'move' | 'scroll'; dx: number; dy: number }
-  | { type: 'moveTo'; x: number; y: number }
-  | { type: 'click' }
+/** A touchpad event; scroll deltas are the finger's, which the content follows (ADR 0012). */
+export type PointerEvent = { type: 'move' | 'scroll'; dx: number; dy: number } | { type: 'click' }
 
 export type PressResult = 'ok' | 'unauthorized' | 'offline'
 
