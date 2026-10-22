@@ -15,7 +15,11 @@ struct RootView: View {
     var body: some View {
         Group {
             if let openApp {
-                ServiceScreen(app: openApp)
+                if openApp.androidPackage != nil {
+                    AndroidScreen(app: openApp)
+                } else {
+                    ServiceScreen(app: openApp)
+                }
             } else if isShowingSettings {
                 SettingsView()
             } else {

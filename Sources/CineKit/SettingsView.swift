@@ -1,5 +1,7 @@
+import AppKit
 import CineKitCore
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct SettingsView: View {
     private enum FormTarget: Identifiable {
@@ -15,11 +17,13 @@ struct SettingsView: View {
     }
 
     @Environment(AppCatalogStore.self) private var store
+    @Environment(AndroidRuntime.self) private var androidRuntime: AndroidRuntime?
     @State private var selection: StreamingApp.ID?
     @State private var formTarget: FormTarget?
     @State private var pendingRemoval: StreamingApp?
     @State private var confirmsRestore = false
     @State private var saveError: String?
+    @State private var isInstalling = false
     @FocusState private var listFocused: Bool
 
     var body: some View {
@@ -30,6 +34,9 @@ struct SettingsView: View {
                 Spacer()
                 Button("Adicionar app", systemImage: "plus") { formTarget = .new }
                     .keyboardShortcut("n")
+                if let androidRuntime {
+                    Button("Adicionar APK…", systemImage: "shippingbox") { addApk(with: androidRuntime) }
+                }
                 Button("Restaurar padrões", systemImage: "arrow.counterclockwise") { confirmsRestore = true }
                     .keyboardShortcut("r", modifiers: [.command, .shift])
             }
@@ -40,7 +47,7 @@ struct SettingsView: View {
                     Text(app.name)
                         .font(.title)
                     Spacer()
-                    Text(app.url.host() ?? "")
+                    Text(app.androidPackage ?? app.url.host() ?? "")
                         .font(.title2)
                         .foregroundStyle(.secondary)
                 }
@@ -55,6 +62,15 @@ struct SettingsView: View {
             }
         }
         .padding(80)
+        .overlay {
+            if isInstalling {
+                ProgressView("Instalando…")
+                    .controlSize(.extraLarge)
+                    .font(.title)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(.black.opacity(0.6))
+            }
+        }
         .onAppear {
             selection = store.apps.first?.id
             listFocused = true
@@ -84,6 +100,24 @@ struct SettingsView: View {
             Button("OK") { saveError = nil }
         } message: {
             Text(saveError ?? "")
+        }
+    }
+
+    private func addApk(with runtime: AndroidRuntime) {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [UTType(filenameExtension: "apk") ?? .data]
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        isInstalling = true
+        Task {
+            defer { isInstalling = false }
+            do {
+                // The emulator may still be booting right after the app opens.
+                try await runtime.waitUntilBooted()
+                let installed = try await runtime.install(apk: url)
+                perform { try store.add(.android(package: installed.package, name: installed.label)) }
+            } catch {
+                saveError = "Não foi possível instalar o APK: \(error.localizedDescription)"
+            }
         }
     }
 

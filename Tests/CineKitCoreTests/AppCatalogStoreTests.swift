@@ -24,6 +24,12 @@ struct AppCatalogStoreTests {
         #expect(try makeStore().apps == DefaultApps.all + [custom])
     }
 
+    @Test func androidAppPersistsAcrossInstances() throws {
+        let android = StreamingApp.android(package: "org.jellyfin.androidtv", name: "Jellyfin")
+        try makeStore().add(android)
+        #expect(try makeStore().apps.last?.androidPackage == "org.jellyfin.androidtv")
+    }
+
     @Test func updateDefaultAppPersists() throws {
         var netflix = DefaultApps.all[0]
         netflix.name = "Netflix Kids"

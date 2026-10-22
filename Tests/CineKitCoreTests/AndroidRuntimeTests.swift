@@ -87,4 +87,38 @@ struct AndroidRuntimeTests {
         await #expect(throws: AndroidRuntimeError.bootTimeout) { try await runtime.waitUntilBooted(timeout: 5) }
         #expect(runner.calls.count == 5)
     }
+
+    @Test func installReadsBadgingThenInstalls() async throws {
+        runner.respond("dump badging /tmp/jellyfin.apk", "package: name='org.jellyfin.androidtv' versionCode='1'\napplication-label:'Jellyfin'\n")
+
+        let installed = try await runtime.install(apk: URL(filePath: "/tmp/jellyfin.apk"))
+
+        #expect(installed.package == "org.jellyfin.androidtv")
+        #expect(installed.label == "Jellyfin")
+        #expect(runner.calls == [
+            "aapt2 dump badging /tmp/jellyfin.apk",
+            "adb -s emulator-5554 install -r /tmp/jellyfin.apk",
+        ])
+    }
+
+    @Test func launchFallsBackToLauncherCategory() async throws {
+        let resolve = "-s emulator-5554 shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c"
+        runner.respond("\(resolve) android.intent.category.LEANBACK_LAUNCHER org.example.phone", "No activity found\n")
+        runner.respond(
+            "\(resolve) android.intent.category.LAUNCHER org.example.phone",
+            "priority=0 preferredOrder=0 match=0x108000 specificIndex=-1 isDefault=true\norg.example.phone/.MainActivity\n"
+        )
+
+        try await runtime.launch(package: "org.example.phone")
+
+        #expect(runner.calls.last == "adb -s emulator-5554 shell am start -n org.example.phone/.MainActivity")
+    }
+
+    @Test func ensureRunningRestartsDeadEmulatorOnce() async throws {
+        runner.respond("devices", "List of devices attached\n\n")
+
+        try await runtime.ensureRunning(resolution: .hd1080)
+
+        #expect(runner.launched.count == 1)
+    }
 }

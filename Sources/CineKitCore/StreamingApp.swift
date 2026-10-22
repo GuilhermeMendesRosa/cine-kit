@@ -16,4 +16,13 @@ public struct StreamingApp: Codable, Identifiable, Hashable, Sendable {
         self.imageFileName = imageFileName
         self.isDefault = isDefault
     }
+
+    /// Android apps are stored as `android-app://<package>` (ADR 0004).
+    public var androidPackage: String? {
+        url.scheme == "android-app" ? url.host() : nil
+    }
+
+    public static func android(package: String, name: String) -> StreamingApp {
+        StreamingApp(id: UUID().uuidString, name: name, url: URL(string: "android-app://\(package)")!, colorHex: "#5E5CE6", isDefault: false)
+    }
 }
