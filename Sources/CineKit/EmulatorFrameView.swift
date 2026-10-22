@@ -40,7 +40,9 @@ final class EmulatorFrameSource {
         lastFrame = header.frameNumber
         return CGImage(
             width: header.width, height: header.height, bitsPerComponent: 8, bitsPerPixel: 32, bytesPerRow: header.width * 4,
-            space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.noneSkipLast.rawValue),
+            // The pixels are BGRA in memory, which is 32-bit little-endian with the alpha first.
+            space: CGColorSpace(name: CGColorSpace.sRGB)!,
+            bitmapInfo: CGBitmapInfo(rawValue: CGBitmapInfo.byteOrder32Little.rawValue | CGImageAlphaInfo.noneSkipFirst.rawValue),
             provider: provider, decode: nil, shouldInterpolate: true, intent: .defaultIntent
         )
     }

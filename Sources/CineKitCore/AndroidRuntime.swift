@@ -46,8 +46,9 @@ public final class AndroidRuntime {
 
     public func start(resolution: Resolution) async throws {
         if try await deviceState() == "device" { return }
+        // The goldfish hardware decoders never return frames in a headless emulator; the software ones do.
         emulator = try runner.launch(sdk.emulator, [
-            "-avd", sdk.avdName, "-no-window", "-no-boot-anim", "-share-vid",
+            "-avd", sdk.avdName, "-no-window", "-no-boot-anim", "-share-vid", "-feature", "-HardwareDecoder",
             "-skin", resolution.skin, "-prop", "qemu.sf.lcd_density=\(resolution.density)",
         ])
     }

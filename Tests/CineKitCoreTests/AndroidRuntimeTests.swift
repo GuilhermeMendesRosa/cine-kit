@@ -53,7 +53,7 @@ struct AndroidRuntimeTests {
         try await runtime.start(resolution: .hd1080)
 
         #expect(runner.launched == [
-            "emulator -avd cinekit-tv -no-window -no-boot-anim -share-vid -skin 1920x1080 -prop qemu.sf.lcd_density=320",
+            "emulator -avd cinekit-tv -no-window -no-boot-anim -share-vid -feature -HardwareDecoder -skin 1920x1080 -prop qemu.sf.lcd_density=320",
         ])
     }
 
@@ -61,7 +61,7 @@ struct AndroidRuntimeTests {
         try await runtime.start(resolution: .uhd4k)
 
         #expect(runner.launched == [
-            "emulator -avd cinekit-tv -no-window -no-boot-anim -share-vid -skin 3840x2160 -prop qemu.sf.lcd_density=640",
+            "emulator -avd cinekit-tv -no-window -no-boot-anim -share-vid -feature -HardwareDecoder -skin 3840x2160 -prop qemu.sf.lcd_density=640",
         ])
     }
 
@@ -136,7 +136,7 @@ struct AndroidRuntimeTests {
 
         #expect(runner.launched == [
             "adb -s emulator-5554 emu kill",
-            "emulator -avd cinekit-tv -no-window -no-boot-anim -share-vid -skin 3840x2160 -prop qemu.sf.lcd_density=640",
+            "emulator -avd cinekit-tv -no-window -no-boot-anim -share-vid -feature -HardwareDecoder -skin 3840x2160 -prop qemu.sf.lcd_density=640",
         ])
     }
 }

@@ -1,5 +1,5 @@
 /// Header of the framebuffer the emulator shares with `-share-vid` (ADR 0009): width, height, fps and frame number
-/// as little-endian `UInt32`, a `UInt64` timestamp, then `width × height` RGBA8888 pixels.
+/// as little-endian `UInt32`, a `UInt64` timestamp, then `width × height` BGRA8888 pixels.
 public struct EmulatorFrameHeader: Equatable, Sendable {
     /// `videmulator<console port>`; the console port of `emulator-5554` is 5554.
     public static let sharedMemoryName = "videmulator5554"
