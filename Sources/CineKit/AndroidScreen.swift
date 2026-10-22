@@ -133,7 +133,7 @@ struct AndroidScreen: View {
     private func close() {
         if let keyMonitor { NSEvent.removeMonitor(keyMonitor) }
         client?.stop()
-        // The app stays alive in the emulator and resumes where it was next time.
-        if let runtime { Task { try? await runtime.pressHome() } }
+        // The media is paused and the app stays alive in the emulator, resuming where it was next time (ADR 0014).
+        if let runtime { Task { try? await runtime.pauseMedia(); try? await runtime.pressHome() } }
     }
 }

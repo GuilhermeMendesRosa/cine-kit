@@ -113,6 +113,10 @@ public final class AndroidRuntime {
         ForegroundActivity.package(fromDumpsys: try await adb("shell", "dumpsys", "activity", "activities"))
     }
 
+    public func pauseMedia() async throws {
+        _ = try await adb("shell", "input", "keyevent", "127")
+    }
+
     public func pressHome() async throws {
         _ = try await adb("shell", "input", "keyevent", "3")
     }

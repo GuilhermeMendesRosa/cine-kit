@@ -140,6 +140,12 @@ struct AndroidRuntimeTests {
         #expect(runner.calls == ["adb -s emulator-5554 uninstall org.jellyfin.androidtv"])
     }
 
+    @Test func pauseMediaSendsMediaPauseKey() async throws {
+        try await runtime.pauseMedia()
+
+        #expect(runner.calls == ["adb -s emulator-5554 shell input keyevent 127"])
+    }
+
     @Test func restartStopsThenStartsWithNewResolution() async throws {
         runner.respond("devices", "List of devices attached\nemulator-5554\tdevice\n\n", "List of devices attached\n\n")
 
