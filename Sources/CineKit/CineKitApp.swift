@@ -49,6 +49,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         androidSetup.start()
     }
 
+    /// The power button reopens the app through Launch Services (ADR 0021); only a closed window gets a new one.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        !sender.windows.contains { $0.canBecomeMain }
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
         androidSetup.runtime?.stop()
     }

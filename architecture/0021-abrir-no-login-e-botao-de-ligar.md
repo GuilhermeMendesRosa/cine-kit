@@ -14,8 +14,8 @@ O controle web ([0003](0003-controle-remoto-web-via-wifi.md), [0020](0020-contro
 - **Abrir ao iniciar o Mac.** Configurações → Controle remoto ganha a linha "Abrir ao iniciar o Mac" (`Desligado`/`Ligado`), desligada por padrão. Ligado registra o app com `SMAppService.mainApp`; desligado cancela o registro. Se o registro falhar, a seção mostra o erro e a linha continua em `Desligado`. O usuário também pode revogar em Ajustes do Sistema → Geral → Itens de Início.
 - **Escondido no login.** Aberto pelo login (`keyAELaunchedAsLogInItem` no Apple Event de abertura), o app não se ativa nem entra em tela cheia: chama `NSApp.hide(nil)`. O servidor do controle, o Android ([0018](0018-sdk-android-instalado-pelo-app.md)) e o modo de entrada sobem como numa abertura normal.
 - **Botão de ligar.** O protocolo v1 ganha o botão `power` em `POST /api/press`. Ele não vira teclas: o `RemoteServer` trata à parte, como o volume.
-  - Com o CineKit ativo e visível, desliga: posta as teclas do botão Home (o que sai do serviço e pausa a mídia, [0014](0014-servicos-vivos-em-segundo-plano.md)) e, no ciclo seguinte do run loop, esconde o app.
-  - Senão, liga: mostra e ativa o app e põe a janela em tela cheia se ela não estiver.
+  - Com a janela do CineKit visível na tela, ativo ou não, desliga: posta as teclas do botão Home (o que sai do serviço e pausa a mídia, [0014](0014-servicos-vivos-em-segundo-plano.md)) e, no ciclo seguinte do run loop, esconde o app.
+  - Senão, liga, com qualquer app na frente: mostra o app e o reabre pelo Launch Services (`NSWorkspace.openApplication`), que o ativa como um clique no Dock. Desde o macOS 14 a ativação é cooperativa e o `NSApp.activate()` vindo de segundo plano é recusado. Depois tenta pôr a janela em tela cheia por até ~3 s, porque o pedido é ignorado enquanto a janela ainda volta para a tela. Para o reopen não criar uma segunda janela, o `AppDelegate` só deixa o SwiftUI criar uma quando não há nenhuma.
 - **Ícone fixo no controle.** O botão fica na 1ª posição da linha de cima do controle web, com ícone de power, sem mostrar se o CineKit está ligado.
 
 ## Alternativas consideradas
