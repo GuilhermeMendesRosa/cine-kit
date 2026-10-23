@@ -16,7 +16,6 @@ final class RemoteServer {
     }
 
     static let port = 8686
-    private static let tokenKey = "remoteToken"
     private static let themeKey = "appTheme"
     private static let maxRequestSize = 64 * 1024
     private static let logger = Logger(subsystem: "dev.guilhermemendes.CineKit", category: "RemoteServer")
@@ -34,24 +33,14 @@ final class RemoteServer {
     ]
 
     private(set) var state = State.running
-    private(set) var token: String
     /// The open app's click sound setting, for `GET /api/state` (ADR 0015).
     var clickSound = true
     @ObservationIgnored private var listener: NWListener?
 
-    init() {
-        if let token = UserDefaults.standard.string(forKey: Self.tokenKey) {
-            self.token = token
-        } else {
-            token = RemotePairing.makeToken()
-            UserDefaults.standard.set(token, forKey: Self.tokenKey)
-        }
-    }
-
     /// Nil when the Mac has no Bonjour name.
     var pairingURL: URL? {
         guard let name = SCDynamicStoreCopyLocalHostName(nil) as String? else { return nil }
-        return RemotePairing.url(host: "\(name).local", port: Self.port, token: token)
+        return RemotePairing.url(host: "\(name).local", port: Self.port)
     }
 
     /// Nil when the Mac has no Bonjour name.
@@ -82,12 +71,6 @@ final class RemoteServer {
         }
     }
 
-    /// Paired phones get 401 and have to scan the new QR code.
-    func regenerateToken() {
-        token = RemotePairing.makeToken()
-        UserDefaults.standard.set(token, forKey: Self.tokenKey)
-    }
-
     private func serve(_ connection: NWConnection) {
         connection.start(queue: .main)
         receive(on: connection, buffer: Data())
@@ -113,7 +96,7 @@ final class RemoteServer {
     private func respond(to request: RemoteHTTPRequest) -> RemoteResponse {
         let folder = Bundle.main.resourceURL?.appending(path: "remote")
         let theme = AppTheme(rawValue: UserDefaults.standard.string(forKey: Self.themeKey) ?? "") ?? .dark
-        let response = RemoteRoute.response(for: request, token: token, clickSound: clickSound, theme: theme) { path in
+        let response = RemoteRoute.response(for: request, clickSound: clickSound, theme: theme) { path in
             folder.flatMap { try? Data(contentsOf: $0.appending(path: path)) }
         }
         if response.status == 400 {

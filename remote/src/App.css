@@ -54,14 +54,6 @@ main {
     max(16px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
 }
 
-.message {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  text-align: center;
-  font-size: 1.25rem;
-}
-
 .remote {
   display: flex;
   flex-direction: column;

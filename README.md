@@ -28,7 +28,7 @@
 
 - **Home de TV** em tela cheia ("10-foot UI"), com Liquid Glass, legível de longe e navegável só com as setas, OK e Voltar.
 - **Serviços de streaming** abertos em WebKit, com DRM, que continuam vivos em segundo plano; YouTube com a interface de TV.
-- **Controle remoto no celular** pela rede Wi-Fi: escaneie o QR nas Configurações e use setas, touchpad, rolagem, volume e teclado de texto, sem instalar nada.
+- **Controle remoto no celular** pela rede Wi-Fi: escaneie o QR uma vez, ou abra `http://<nome-do-mac>.local:8686`, salve na tela de início e use setas, touchpad, rolagem, volume e teclado de texto, sem instalar nada.
 - **Apps Android** (APKs sem DRM) num emulador escondido, que aparecem na home como qualquer outro serviço.
 - Tema claro/escuro e Configurações navegáveis pelo controle.
 

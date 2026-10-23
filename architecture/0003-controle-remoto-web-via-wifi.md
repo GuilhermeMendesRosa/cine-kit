@@ -3,7 +3,7 @@
 - **Status:** Aceito
 - **Data:** 2026-10-22
 - **Substitui:** —
-- **Substituído por:** [0012](0012-controle-unico-com-paridade-de-teclado-e-mouse.md) (tabela de teclas, botão Home, touchpad)
+- **Substituído por:** [0012](0012-controle-unico-com-paridade-de-teclado-e-mouse.md) (tabela de teclas, botão Home, touchpad), [0020](0020-controle-sem-token.md) (pareamento)
 
 ## Contexto
 

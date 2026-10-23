@@ -52,16 +52,13 @@ describe('createPointerQueue', () => {
     ])
   })
 
-  it('reports offline/unauthorized', async () => {
+  it('reports offline', async () => {
     const { send, finish } = pendingSend()
     const onResult = vi.fn()
     const queue = createPointerQueue(send, onResult)
     queue.click()
-    finish('unauthorized')
-    await settle()
-    queue.click()
     finish('offline')
     await settle()
-    expect(onResult.mock.calls).toEqual([['unauthorized'], ['offline']])
+    expect(onResult.mock.calls).toEqual([['offline']])
   })
 })

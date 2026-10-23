@@ -165,7 +165,7 @@ struct SettingsView: View {
         }
     }
 
-    // Rows of the focus grid: back, theme, one per app, add/restore, Android on/off, resolution and identity, remote.
+    // Rows of the focus grid: back, theme, one per app, add/restore, Android on/off, resolution and identity.
     private static let backRow = 0
     private static let themeRow = 1
     private static let firstAppRow = 2
@@ -208,9 +208,6 @@ struct SettingsView: View {
                 systemImage: "wand.and.stars",
                 action: changeIdentity
             )])
-        }
-        if remoteServer.pairingURL != nil, remoteServer.state == .running {
-            rows.append([Control(title: "Gerar novo código", systemImage: "qrcode") { remoteServer.regenerateToken() }])
         }
         return rows
     }
@@ -304,7 +301,6 @@ struct SettingsView: View {
                         .font(.title2)
                         .foregroundStyle(.secondary)
                         .textSelection(.enabled)
-                    controls(rows, row: rows.count - 1)
                 }
             }
         }

@@ -10,31 +10,27 @@ struct RemoteRouteTests {
 
     private func respond(_ raw: String, clickSound: Bool = true, theme: AppTheme = .dark) throws -> RemoteResponse {
         let request = try #require(RemoteHTTPRequest.parse(Data(raw.utf8)))
-        return RemoteRoute.response(for: request, token: "secret", clickSound: clickSound, theme: theme) { files[$0] }
+        return RemoteRoute.response(for: request, clickSound: clickSound, theme: theme) { files[$0] }
     }
 
-    private func press(_ body: String, authorization: String? = "Bearer secret") throws -> RemoteResponse {
-        let header = authorization.map { "Authorization: \($0)\r\n" } ?? ""
-        return try respond("POST /api/press HTTP/1.1\r\n\(header)Content-Length: \(body.utf8.count)\r\n\r\n\(body)")
+    private func press(_ body: String) throws -> RemoteResponse {
+        try respond("POST /api/press HTTP/1.1\r\nContent-Length: \(body.utf8.count)\r\n\r\n\(body)")
     }
 
-    private func pointer(_ body: String, authorization: String? = "Bearer secret") throws -> RemoteResponse {
-        let header = authorization.map { "Authorization: \($0)\r\n" } ?? ""
-        return try respond("POST /api/pointer HTTP/1.1\r\n\(header)Content-Length: \(body.utf8.count)\r\n\r\n\(body)")
+    private func pointer(_ body: String) throws -> RemoteResponse {
+        try respond("POST /api/pointer HTTP/1.1\r\nContent-Length: \(body.utf8.count)\r\n\r\n\(body)")
     }
 
-    private func text(_ body: String, authorization: String? = "Bearer secret") throws -> RemoteResponse {
-        let header = authorization.map { "Authorization: \($0)\r\n" } ?? ""
-        return try respond("POST /api/text HTTP/1.1\r\n\(header)Content-Length: \(body.utf8.count)\r\n\r\n\(body)")
+    private func text(_ body: String) throws -> RemoteResponse {
+        try respond("POST /api/text HTTP/1.1\r\nContent-Length: \(body.utf8.count)\r\n\r\n\(body)")
     }
 
-    private func themeRequest(_ body: String, authorization: String? = "Bearer secret") throws -> RemoteResponse {
-        let header = authorization.map { "Authorization: \($0)\r\n" } ?? ""
-        return try respond("POST /api/theme HTTP/1.1\r\n\(header)Content-Length: \(body.utf8.count)\r\n\r\n\(body)")
+    private func themeRequest(_ body: String) throws -> RemoteResponse {
+        try respond("POST /api/theme HTTP/1.1\r\nContent-Length: \(body.utf8.count)\r\n\r\n\(body)")
     }
 
     @Test func rootServesIndex() throws {
-        let response = try respond("GET /?token=abc HTTP/1.1\r\n\r\n")
+        let response = try respond("GET / HTTP/1.1\r\n\r\n")
         #expect(response.status == 200)
         #expect(response.headers["Content-Type"] == "text/html; charset=utf-8")
         #expect(response.body == Data("<html>".utf8))
@@ -52,12 +48,10 @@ struct RemoteRouteTests {
         #expect(try respond("POST /api/other HTTP/1.1\r\n\r\n").status == 404)
     }
 
-    @Test func pressWithoutTokenIs401() throws {
-        #expect(try press(#"{"button":"ok"}"#, authorization: nil).status == 401)
-    }
-
-    @Test func pressWithWrongTokenIs401() throws {
-        #expect(try press(#"{"button":"ok"}"#, authorization: "Bearer wrong").status == 401)
+    @Test func pressWithoutAuthorizationIsAccepted() throws {
+        let response = try press(#"{"button":"ok"}"#)
+        #expect(response.status == 204)
+        #expect(response.button == .ok)
     }
 
     @Test func unknownButtonIs400() throws {
@@ -75,7 +69,7 @@ struct RemoteRouteTests {
     @Test func rejectsPathTraversal() throws {
         let request = try #require(RemoteHTTPRequest.parse(Data("GET /../secret.txt HTTP/1.1\r\n\r\n".utf8)))
         var asked = false
-        let response = RemoteRoute.response(for: request, token: "secret", clickSound: true, theme: .dark) { _ in
+        let response = RemoteRoute.response(for: request, clickSound: true, theme: .dark) { _ in
             asked = true
             return Data()
         }
@@ -91,14 +85,14 @@ struct RemoteRouteTests {
     }
 
     @Test func stateReturnsClickSound() throws {
-        let response = try respond("GET /api/state HTTP/1.1\r\nAuthorization: Bearer secret\r\n\r\n", clickSound: false)
+        let response = try respond("GET /api/state HTTP/1.1\r\n\r\n", clickSound: false)
         #expect(response.status == 200)
         #expect(response.headers["Content-Type"] == "application/json")
         #expect(response.body == Data(#"{"clickSound":false,"theme":"dark"}"#.utf8))
     }
 
     @Test func stateReturnsTheme() throws {
-        let response = try respond("GET /api/state HTTP/1.1\r\nAuthorization: Bearer secret\r\n\r\n", theme: .light)
+        let response = try respond("GET /api/state HTTP/1.1\r\n\r\n", theme: .light)
         #expect(String(decoding: response.body, as: UTF8.self).contains(#""theme":"light""#))
     }
 
@@ -115,14 +109,10 @@ struct RemoteRouteTests {
         #expect(try themeRequest("dark").status == 400)
     }
 
-    @Test func themeWithoutTokenIs401() throws {
-        #expect(try themeRequest(#"{"theme":"dark"}"#, authorization: nil).status == 401)
-        #expect(try themeRequest(#"{"theme":"dark"}"#, authorization: "Bearer wrong").status == 401)
-    }
-
-    @Test func stateWithoutTokenIs401() throws {
-        #expect(try respond("GET /api/state HTTP/1.1\r\n\r\n").status == 401)
-        #expect(try respond("GET /api/state HTTP/1.1\r\nAuthorization: Bearer wrong\r\n\r\n").status == 401)
+    @Test func stateWithoutAuthorizationIsServed() throws {
+        let response = try respond("GET /api/state HTTP/1.1\r\n\r\n")
+        #expect(response.status == 200)
+        #expect(response.body == Data(#"{"clickSound":true,"theme":"dark"}"#.utf8))
     }
 
     @Test func pointerClickReturns204() throws {
@@ -135,11 +125,6 @@ struct RemoteRouteTests {
         let response = try pointer(#"{"type":"scroll","dx":0,"dy":40}"#)
         #expect(response.status == 204)
         #expect(response.pointer == .scroll(dx: 0, dy: 40))
-    }
-
-    @Test func pointerWithoutTokenIs401() throws {
-        #expect(try pointer(#"{"type":"click"}"#, authorization: nil).status == 401)
-        #expect(try pointer(#"{"type":"click"}"#, authorization: "Bearer wrong").status == 401)
     }
 
     @Test func unknownPointerTypeIs400() throws {
@@ -163,11 +148,6 @@ struct RemoteRouteTests {
         let response = try text(#"{"text":"ação 👍"}"#)
         #expect(response.status == 204)
         #expect(response.text == "ação 👍")
-    }
-
-    @Test func textWithoutTokenIs401() throws {
-        #expect(try text(#"{"text":"a"}"#, authorization: nil).status == 401)
-        #expect(try text(#"{"text":"a"}"#, authorization: "Bearer wrong").status == 401)
     }
 
     @Test func emptyLongOrControlTextIs400() throws {

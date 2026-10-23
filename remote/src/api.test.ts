@@ -4,103 +4,93 @@ import { fetchState, pointer, press, setTheme, typeText } from './api'
 describe('press', () => {
   it('is ok on 204', async () => {
     const fetch = vi.fn().mockResolvedValue(new Response(null, { status: 204 }))
-    expect(await press('ok', { token: 'abc', fetch })).toBe('ok')
+    expect(await press('ok', { fetch })).toBe('ok')
   })
 
-  it('is unauthorized on 401', async () => {
+  it('is offline on 401', async () => {
     const fetch = vi.fn().mockResolvedValue(new Response(null, { status: 401 }))
-    expect(await press('ok', { token: 'abc', fetch })).toBe('unauthorized')
+    expect(await press('ok', { fetch })).toBe('offline')
   })
 
   it('is offline when fetch rejects', async () => {
     const fetch = vi.fn().mockRejectedValue(new TypeError('Load failed'))
-    expect(await press('ok', { token: 'abc', fetch })).toBe('offline')
+    expect(await press('ok', { fetch })).toBe('offline')
   })
 
-  it('sends the token and the button', async () => {
+  it('sends the button without an Authorization header', async () => {
     const fetch = vi.fn().mockResolvedValue(new Response(null, { status: 204 }))
-    await press('volumeUp', { token: 'abc', fetch })
+    await press('volumeUp', { fetch })
     const [url, init] = fetch.mock.calls[0]
     expect(url).toBe('/api/press')
     expect(init.method).toBe('POST')
-    expect(new Headers(init.headers).get('Authorization')).toBe('Bearer abc')
+    expect(new Headers(init.headers).has('Authorization')).toBe(false)
     expect(JSON.parse(init.body)).toEqual({ button: 'volumeUp' })
   })
 })
 
 describe('pointer', () => {
-  it('sends type and deltas', async () => {
+  it('sends type and deltas without an Authorization header', async () => {
     const fetch = vi.fn().mockResolvedValue(new Response(null, { status: 204 }))
-    expect(await pointer({ type: 'move', dx: 3, dy: -4 }, { token: 'abc', fetch })).toBe('ok')
+    expect(await pointer({ type: 'move', dx: 3, dy: -4 }, { fetch })).toBe('ok')
     const [url, init] = fetch.mock.calls[0]
     expect(url).toBe('/api/pointer')
     expect(init.method).toBe('POST')
-    expect(new Headers(init.headers).get('Authorization')).toBe('Bearer abc')
+    expect(new Headers(init.headers).has('Authorization')).toBe(false)
     expect(JSON.parse(init.body)).toEqual({ type: 'move', dx: 3, dy: -4 })
-  })
-
-  it('is unauthorized on 401', async () => {
-    const fetch = vi.fn().mockResolvedValue(new Response(null, { status: 401 }))
-    expect(await pointer({ type: 'click' }, { token: 'abc', fetch })).toBe('unauthorized')
   })
 })
 
 describe('fetchState', () => {
   it('returns the click sound on 200', async () => {
     const fetch = vi.fn().mockResolvedValue(Response.json({ clickSound: false }))
-    expect(await fetchState({ token: 'abc', fetch })).toEqual({ clickSound: false, theme: 'dark' })
+    expect(await fetchState({ fetch })).toEqual({ clickSound: false, theme: 'dark' })
   })
 
   it('returns the theme on 200', async () => {
     const fetch = vi.fn().mockResolvedValue(Response.json({ clickSound: true, theme: 'light' }))
-    expect(await fetchState({ token: 'abc', fetch })).toEqual({ clickSound: true, theme: 'light' })
+    expect(await fetchState({ fetch })).toEqual({ clickSound: true, theme: 'light' })
   })
 
-  it('is unauthorized on 401', async () => {
+  it('is offline on 401', async () => {
     const fetch = vi.fn().mockResolvedValue(new Response(null, { status: 401 }))
-    expect(await fetchState({ token: 'abc', fetch })).toBe('unauthorized')
+    expect(await fetchState({ fetch })).toBe('offline')
   })
 
   it('is offline when fetch rejects', async () => {
     const fetch = vi.fn().mockRejectedValue(new TypeError('Load failed'))
-    expect(await fetchState({ token: 'abc', fetch })).toBe('offline')
+    expect(await fetchState({ fetch })).toBe('offline')
   })
 
-  it('sends the token in GET /api/state', async () => {
+  it('sends GET /api/state without an Authorization header', async () => {
     const fetch = vi.fn().mockResolvedValue(Response.json({ clickSound: true }))
-    await fetchState({ token: 'abc', fetch })
+    await fetchState({ fetch })
     const [url, init] = fetch.mock.calls[0]
     expect(url).toBe('/api/state')
     expect(init.method ?? 'GET').toBe('GET')
-    expect(new Headers(init.headers).get('Authorization')).toBe('Bearer abc')
+    expect(new Headers(init.headers).has('Authorization')).toBe(false)
   })
 })
 
 describe('typeText', () => {
-  it('sends the token and the text', async () => {
+  it('sends the text without an Authorization header', async () => {
     const fetch = vi.fn().mockResolvedValue(new Response(null, { status: 204 }))
-    expect(await typeText('ação', { token: 'abc', fetch })).toBe('ok')
+    expect(await typeText('ação', { fetch })).toBe('ok')
     const [url, init] = fetch.mock.calls[0]
     expect(url).toBe('/api/text')
     expect(init.method).toBe('POST')
-    expect(new Headers(init.headers).get('Authorization')).toBe('Bearer abc')
+    expect(new Headers(init.headers).has('Authorization')).toBe(false)
     expect(JSON.parse(init.body)).toEqual({ text: 'ação' })
   })
 })
 
 describe('setTheme', () => {
-  it('sends the token and the theme', async () => {
+  it('sends the theme without an Authorization header', async () => {
     const fetch = vi.fn().mockResolvedValue(new Response(null, { status: 204 }))
-    expect(await setTheme('dark', { token: 'abc', fetch })).toBe('ok')
+    expect(await setTheme('dark', { fetch })).toBe('ok')
     const [url, init] = fetch.mock.calls[0]
     expect(url).toBe('/api/theme')
     expect(init.method).toBe('POST')
-    expect(new Headers(init.headers).get('Authorization')).toBe('Bearer abc')
+    expect(new Headers(init.headers).has('Authorization')).toBe(false)
     expect(JSON.parse(init.body)).toEqual({ theme: 'dark' })
-  })
-
-  it('is unauthorized on 401', async () => {
-    const fetch = vi.fn().mockResolvedValue(new Response(null, { status: 401 }))
-    expect(await setTheme('light', { token: 'abc', fetch })).toBe('unauthorized')
   })
 })

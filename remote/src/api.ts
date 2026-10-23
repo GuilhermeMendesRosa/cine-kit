@@ -7,61 +7,57 @@ export type PointerEvent = { type: 'move' | 'scroll'; dx: number; dy: number } |
 
 export type Theme = 'light' | 'dark'
 
-export type PressResult = 'ok' | 'unauthorized' | 'offline'
+export type PressResult = 'ok' | 'offline'
 
-type Options = { token: string; fetch?: typeof globalThis.fetch }
+type Options = { fetch?: typeof globalThis.fetch }
 
 const timeoutMs = 2000
 
 /** Sends a button to the Mac (ADR 0003, protocol v1). */
-export function press(button: Button, options: Options): Promise<PressResult> {
+export function press(button: Button, options: Options = {}): Promise<PressResult> {
   return post('/api/press', { button }, options)
 }
 
 /** Sends a touchpad event to the Mac (ADR 0012). */
-export function pointer(event: PointerEvent, options: Options): Promise<PressResult> {
+export function pointer(event: PointerEvent, options: Options = {}): Promise<PressResult> {
   return post('/api/pointer', event, options)
 }
 
 /** Types text on the Mac, like its keyboard (ADR 0016). */
-export function typeText(text: string, options: Options): Promise<PressResult> {
+export function typeText(text: string, options: Options = {}): Promise<PressResult> {
   return post('/api/text', { text }, options)
 }
 
 /** Sets the theme of the Mac and the remote (ADR 0019). */
-export function setTheme(theme: Theme, options: Options): Promise<PressResult> {
+export function setTheme(theme: Theme, options: Options = {}): Promise<PressResult> {
   return post('/api/theme', { theme }, options)
 }
 
 /** Reads the Mac's state for the remote: whether the open app wants the click sound (ADR 0015) and the theme (ADR 0019). */
 export async function fetchState(
-  { token, fetch = globalThis.fetch }: Options,
-): Promise<{ clickSound: boolean; theme: Theme } | 'unauthorized' | 'offline'> {
+  { fetch = globalThis.fetch }: Options = {},
+): Promise<{ clickSound: boolean; theme: Theme } | 'offline'> {
   try {
-    const response = await fetch('/api/state', {
-      headers: { Authorization: `Bearer ${token}` },
-      signal: AbortSignal.timeout(timeoutMs),
-    })
+    const response = await fetch('/api/state', { signal: AbortSignal.timeout(timeoutMs) })
     if (response.ok) {
       const json = await response.json()
       return { clickSound: json.clickSound === true, theme: json.theme === 'light' ? 'light' : 'dark' }
     }
-    return response.status === 401 ? 'unauthorized' : 'offline'
+    return 'offline'
   } catch {
     return 'offline'
   }
 }
 
-async function post(path: string, body: object, { token, fetch = globalThis.fetch }: Options): Promise<PressResult> {
+async function post(path: string, body: object, { fetch = globalThis.fetch }: Options): Promise<PressResult> {
   try {
     const response = await fetch(path, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(timeoutMs),
     })
-    if (response.ok) return 'ok'
-    return response.status === 401 ? 'unauthorized' : 'offline'
+    return response.ok ? 'ok' : 'offline'
   } catch {
     return 'offline'
   }

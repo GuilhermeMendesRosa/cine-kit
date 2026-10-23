@@ -28,7 +28,7 @@ public struct RemoteResponse: Equatable, Sendable {
 
     /// The bytes to send back, keeping the connection open.
     public var data: Data {
-        let reasons = [200: "OK", 204: "No Content", 400: "Bad Request", 401: "Unauthorized", 404: "Not Found"]
+        let reasons = [200: "OK", 204: "No Content", 400: "Bad Request", 404: "Not Found"]
         var head = "HTTP/1.1 \(status) \(reasons[status] ?? "")\r\n"
         for (name, value) in headers.merging(["Content-Length": "\(body.count)", "Connection": "keep-alive"], uniquingKeysWith: { $1 }) {
             head += "\(name): \(value)\r\n"
@@ -37,7 +37,7 @@ public struct RemoteResponse: Equatable, Sendable {
     }
 }
 
-/// Routes a request of the web remote: the API and the app's static files (ADR 0003, protocol v1, and ADRs 0012, 0016 and 0019).
+/// Routes a request of the web remote: the API and the app's static files (ADR 0003, protocol v1, and ADRs 0012, 0016, 0019 and 0020).
 public enum RemoteRoute {
     private static let contentTypes = [
         "html": "text/html; charset=utf-8",
@@ -71,22 +71,21 @@ public enum RemoteRoute {
     /// `clickSound` is the remote's click sound for the open app (ADR 0015). `theme` is the app's theme, shared with the
     /// remote (ADR 0019). `staticFile` reads a file of the web app by its path relative to the app's folder.
     public static func response(
-        for request: RemoteHTTPRequest, token: String, clickSound: Bool, theme: AppTheme, staticFile: (String) -> Data?
+        for request: RemoteHTTPRequest, clickSound: Bool, theme: AppTheme, staticFile: (String) -> Data?
     ) -> RemoteResponse {
         if request.path == "/api/press", request.method == "POST" {
-            return press(request, token: token)
+            return press(request)
         }
         if request.path == "/api/pointer", request.method == "POST" {
-            return pointer(request, token: token)
+            return pointer(request)
         }
         if request.path == "/api/text", request.method == "POST" {
-            return text(request, token: token)
+            return text(request)
         }
         if request.path == "/api/theme", request.method == "POST" {
-            return self.theme(request, token: token)
+            return self.theme(request)
         }
         if request.path == "/api/state", request.method == "GET" {
-            guard authorized(request, token: token) else { return RemoteResponse(status: 401) }
             let encoder = JSONEncoder()
             encoder.outputFormatting = .sortedKeys
             let body = (try? encoder.encode(State(clickSound: clickSound, theme: theme.rawValue))) ?? Data()
@@ -99,21 +98,18 @@ public enum RemoteRoute {
         return RemoteResponse(status: 200, headers: ["Content-Type": type], body: body)
     }
 
-    private static func press(_ request: RemoteHTTPRequest, token: String) -> RemoteResponse {
-        guard authorized(request, token: token) else { return RemoteResponse(status: 401) }
+    private static func press(_ request: RemoteHTTPRequest) -> RemoteResponse {
         guard let press = try? JSONDecoder().decode(Press.self, from: request.body),
               let button = RemoteButton(rawValue: press.button) else { return RemoteResponse(status: 400) }
         return RemoteResponse(status: 204, button: button)
     }
 
-    private static func pointer(_ request: RemoteHTTPRequest, token: String) -> RemoteResponse {
-        guard authorized(request, token: token) else { return RemoteResponse(status: 401) }
+    private static func pointer(_ request: RemoteHTTPRequest) -> RemoteResponse {
         guard let event = try? JSONDecoder().decode(RemotePointerEvent.self, from: request.body) else { return RemoteResponse(status: 400) }
         return RemoteResponse(status: 204, pointer: event)
     }
 
-    private static func text(_ request: RemoteHTTPRequest, token: String) -> RemoteResponse {
-        guard authorized(request, token: token) else { return RemoteResponse(status: 401) }
+    private static func text(_ request: RemoteHTTPRequest) -> RemoteResponse {
         guard let text = try? JSONDecoder().decode(Text.self, from: request.body).text,
               !text.isEmpty, text.count <= maxTextLength,
               !text.unicodeScalars.contains(where: { $0.properties.generalCategory == .control }) else {
@@ -122,21 +118,9 @@ public enum RemoteRoute {
         return RemoteResponse(status: 204, text: text)
     }
 
-    private static func theme(_ request: RemoteHTTPRequest, token: String) -> RemoteResponse {
-        guard authorized(request, token: token) else { return RemoteResponse(status: 401) }
+    private static func theme(_ request: RemoteHTTPRequest) -> RemoteResponse {
         guard let body = try? JSONDecoder().decode(ThemeBody.self, from: request.body),
               let theme = AppTheme(rawValue: body.theme) else { return RemoteResponse(status: 400) }
         return RemoteResponse(status: 204, theme: theme)
-    }
-
-    private static func authorized(_ request: RemoteHTTPRequest, token: String) -> Bool {
-        guard let authorization = request.headers["authorization"] else { return false }
-        return constantTimeEquals(authorization, "Bearer \(token)")
-    }
-
-    private static func constantTimeEquals(_ a: String, _ b: String) -> Bool {
-        let a = Array(a.utf8), b = Array(b.utf8)
-        guard a.count == b.count else { return false }
-        return zip(a, b).reduce(0) { $0 | ($1.0 ^ $1.1) } == 0
     }
 }

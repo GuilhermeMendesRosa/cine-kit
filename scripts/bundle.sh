@@ -21,6 +21,10 @@ cp -R "$bin/CineKit_CineKit.bundle" "$app/Contents/Resources/"
 # The web remote the app serves on the local network (ADR 0003, 0011).
 (cd remote && npm ci && npm run build)
 cp -R remote/dist "$app/Contents/Resources/remote"
+# The iPhone home screen icon: the blue square inside the app icon's rounded corners, so iOS rounds it once (ADR 0020).
+touch_icon="$app/Contents/Resources/remote/apple-touch-icon.png"
+sips --cropToHeightWidth 704 704 assets/AppIcon.png --out "$touch_icon" >/dev/null
+sips -z 180 180 "$touch_icon" >/dev/null
 
 # iconutil and sips ship with macOS, so the icon builds without Xcode.
 iconset="$(mktemp -d)/AppIcon.iconset"

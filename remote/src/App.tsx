@@ -3,7 +3,6 @@ import { fetchState, pointer, press, setTheme, typeText, type Button, type Press
 import { createClickSound } from './clickSound'
 import { haptic } from './haptics'
 import { startHold } from './holdRepeat'
-import { clearToken, resolveToken } from './pairing'
 import { createPointerQueue } from './pointerQueue'
 import { createTextQueue, type TextQueue } from './textQueue'
 import { applyTheme, loadTheme, saveTheme } from './theme'
@@ -21,47 +20,36 @@ function feedback() {
 }
 
 export default function App() {
-  const [token, setToken] = useState(() => resolveToken(new URL(location.href), localStorage))
-  const [expired, setExpired] = useState(false)
   const [offline, setOffline] = useState(false)
   const [theme, setThemeState] = useState(() => loadTheme(localStorage))
 
-  // The Mac's theme, also on the pairing screen (ADR 0019).
+  // The Mac's theme (ADR 0019).
   useEffect(() => {
     applyTheme(theme)
     saveTheme(theme, localStorage)
   }, [theme])
 
   function handleResult(result: PressResult) {
-    if (result === 'unauthorized') {
-      clearToken(localStorage)
-      setToken(null)
-      setExpired(true)
-    }
     setOffline(result === 'offline')
   }
 
   async function send(button: Button) {
-    if (!token) return
-    handleResult(await press(button, { token }))
+    handleResult(await press(button))
   }
 
   // Optimistic: the phone switches at once; offline, the next /api/state brings back the Mac's theme.
   async function toggleTheme() {
-    if (!token) return
     const next = theme === 'dark' ? 'light' : 'dark'
     setThemeState(next)
-    handleResult(await setTheme(next, { token }))
+    handleResult(await setTheme(next))
   }
 
   // The open app may turn the click sound off (ADR 0015) and the Mac sets the theme (ADR 0019); offline keeps the last values.
   useEffect(() => {
-    if (!token) return
     async function refresh() {
       if (document.visibilityState !== 'visible') return
-      const state = await fetchState({ token: token! })
-      if (state === 'unauthorized') handleResult(state)
-      else if (state !== 'offline') {
+      const state = await fetchState()
+      if (state !== 'offline') {
         clickSound.enabled = state.clickSound
         setThemeState(state.theme)
       }
@@ -73,25 +61,10 @@ export default function App() {
       clearInterval(interval)
       document.removeEventListener('visibilitychange', refresh)
     }
-  }, [token])
+  }, [])
 
-  const queue = useMemo(
-    () => token ? createPointerQueue((event) => pointer(event, { token }), handleResult) : null,
-    [token],
-  )
-  const textQueue = useMemo(
-    () => token ? createTextQueue((text) => typeText(text, { token }), handleResult) : null,
-    [token],
-  )
-
-  if (!token || !queue || !textQueue) {
-    return (
-      <main className="message">
-        <h1>{expired ? 'Pareamento expirou' : 'cine-kit'}</h1>
-        <p>{expired ? 'Escaneie de novo' : 'Escaneie'} o QR code em Configurações → Controle remoto, no cine-kit.</p>
-      </main>
-    )
-  }
+  const queue = useMemo(() => createPointerQueue(pointer, handleResult), [])
+  const textQueue = useMemo(() => createTextQueue(typeText, handleResult), [])
 
   return (
     <main className="remote">

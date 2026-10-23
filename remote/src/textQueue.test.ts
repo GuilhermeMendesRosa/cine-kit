@@ -24,7 +24,7 @@ describe('createTextQueue', () => {
     expect(send.mock.calls.map(([text]) => text)).toEqual(['a', 'bc'])
   })
 
-  it('reports offline/unauthorized', async () => {
+  it('reports offline', async () => {
     const { send, finish } = pendingSend()
     const onResult = vi.fn()
     const queue = createTextQueue(send, onResult)
