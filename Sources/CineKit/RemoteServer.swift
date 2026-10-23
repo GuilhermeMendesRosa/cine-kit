@@ -131,8 +131,16 @@ final class RemoteServer {
         } else {
             NSApp.unhide(nil)
             NSApp.activate()
-            if let window = NSApp.windows.first, !window.styleMask.contains(.fullScreen) {
-                window.toggleFullScreen(nil)
+            // Full screen only takes once the window is back on screen, after the app becomes active.
+            Task {
+                if !NSApp.isActive {
+                    for await _ in NotificationCenter.default.notifications(named: NSApplication.didBecomeActiveNotification) {
+                        break
+                    }
+                }
+                if let window = NSApp.windows.first, !window.styleMask.contains(.fullScreen) {
+                    window.toggleFullScreen(nil)
+                }
             }
         }
     }
