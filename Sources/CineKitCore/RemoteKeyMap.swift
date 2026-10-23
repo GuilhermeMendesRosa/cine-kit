@@ -19,7 +19,7 @@ public enum RemoteKeyMap {
     ]
     private static let escapeKeyCode: UInt16 = 53
 
-    /// Empty for the volume buttons, which the server handles itself.
+    /// Empty for the volume and power buttons, which the server handles itself.
     public static func keystrokes(for button: RemoteButton) -> [Keystroke] {
         switch button {
         case .back:
@@ -31,7 +31,7 @@ public enum RemoteKeyMap {
                 Keystroke(keyCode: escapeKeyCode, command: false, isDown: true, isRepeat: true),
                 Keystroke(keyCode: escapeKeyCode, command: false, isDown: false, isRepeat: false),
             ]
-        case .volumeUp, .volumeDown, .mute:
+        case .volumeUp, .volumeDown, .mute, .power:
             []
         default:
             keys[button].map { press($0) } ?? []

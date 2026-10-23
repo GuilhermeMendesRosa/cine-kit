@@ -71,6 +71,7 @@ export default function App() {
       <p className="status" aria-live="polite">{offline ? 'Mac não encontrado' : ''}</p>
       <div className="top">
         <div className="top-row">
+          <Key button="power" label="Ligar ou desligar" onPress={send}><PowerIcon /></Key>
           <div className="volume glass">
             <Key button="volumeDown" label="Diminuir volume" onPress={send}><VolumeIcon sign="−" /></Key>
             <Key button="volumeUp" label="Aumentar volume" onPress={send}><VolumeIcon sign="+" /></Key>
@@ -242,6 +243,10 @@ function Chevron({ rotate }: { rotate: number }) {
 
 function BackIcon() {
   return <Icon><path d="M9 14 4 9l5-5" /><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" /></Icon>
+}
+
+function PowerIcon() {
+  return <Icon><path d="M12 3v8" /><path d="M7.5 6.2a7.5 7.5 0 1 0 9 0" /></Icon>
 }
 
 function HomeIcon() {

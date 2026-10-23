@@ -169,6 +169,7 @@ main {
 }
 
 .actions > .key,
+.key-power,
 .key-home,
 .key-theme {
   background: var(--glass-fill);
@@ -176,6 +177,7 @@ main {
 }
 
 .actions > .key:active,
+.key-power:active,
 .key-home:active,
 .key-theme:active {
   background: var(--glass-pressed);
@@ -216,7 +218,7 @@ main {
 }
 
 .volume .key {
-  min-width: 96px;
+  min-width: 64px;
 }
 
 .volume .key + .key {
@@ -227,6 +229,7 @@ main {
   .glass,
   .dpad .key-ok,
   .actions > .key,
+  .key-power,
   .key-home,
   .key-theme {
     background: var(--glass-solid);

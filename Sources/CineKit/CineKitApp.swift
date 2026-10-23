@@ -26,10 +26,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let inputMode = InputMode()
     let webViewCache = WebViewCache()
 
+    /// Opened by "Abrir ao iniciar o Mac", which starts the app hidden (ADR 0021).
+    private var launchedAtLogin: Bool {
+        let event = NSAppleEventManager.shared().currentAppleEvent
+        return event?.eventID == kAEOpenApplication
+            && event?.paramDescriptor(forKeyword: keyAEPropData)?.enumCodeValue == keyAELaunchedAsLogInItem
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
-        NSApp.activate()
+        let launchedAtLogin = launchedAtLogin
+        if launchedAtLogin {
+            NSApp.hide(nil)
+        } else {
+            NSApp.activate()
+        }
         DispatchQueue.main.async {
-            NSApp.windows.first?.toggleFullScreen(nil)
+            if !launchedAtLogin { NSApp.windows.first?.toggleFullScreen(nil) }
             // After the window exists, which it needs for mouse-moved events.
             self.inputMode.start()
         }

@@ -55,9 +55,15 @@ struct RemoteRouteTests {
     }
 
     @Test func unknownButtonIs400() throws {
-        let response = try press(#"{"button":"power"}"#)
+        let response = try press(#"{"button":"rewind"}"#)
         #expect(response.status == 400)
         #expect(response.button == nil)
+    }
+
+    @Test func pressPowerIsAccepted() throws {
+        let response = try press(#"{"button":"power"}"#)
+        #expect(response.status == 204)
+        #expect(response.button == .power)
     }
 
     @Test func validPressReturns204AndButton() throws {

@@ -1,6 +1,7 @@
 import AppKit
 import CineKitCore
 import os
+import ServiceManagement
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -44,6 +45,8 @@ struct SettingsView: View {
     @State private var saveError: String?
     @State private var isInstalling = false
     @State private var isChangingIdentity = false
+    @State private var launchesAtLogin = SMAppService.mainApp.status == .enabled
+    @State private var launchAtLoginError: String?
     @AppStorage("androidResolution") private var androidResolution = AndroidRuntime.Resolution.hd1080
     @AppStorage("appTheme") private var theme = AppTheme.dark
     @FocusState private var hasKeyboardFocus: Bool
@@ -165,7 +168,7 @@ struct SettingsView: View {
         }
     }
 
-    // Rows of the focus grid: back, theme, one per app, add/restore, Android on/off, resolution and identity.
+    // Rows of the focus grid: back, theme, one per app, add/restore, Android on/off, resolution and identity, launch at login.
     private static let backRow = 0
     private static let themeRow = 1
     private static let firstAppRow = 2
@@ -209,6 +212,10 @@ struct SettingsView: View {
                 action: changeIdentity
             )])
         }
+        rows.append([
+            Control(title: "Desligado", isSelected: !launchesAtLogin) { setLaunchesAtLogin(false) },
+            Control(title: "Ligado", isSelected: launchesAtLogin) { setLaunchesAtLogin(true) },
+        ])
         return rows
     }
 
@@ -285,6 +292,21 @@ struct SettingsView: View {
     }
 
     private func remoteSection(_ rows: [[Control]]) -> some View {
+        VStack(alignment: .leading, spacing: 24) {
+            remotePairing
+            HStack(spacing: 16) {
+                Text("Abrir ao iniciar o Mac")
+                    .font(.title2)
+                controls(rows, row: rows.count - 1)
+            }
+            if let launchAtLoginError {
+                Text("Não foi possível mudar: \(launchAtLoginError)")
+                    .font(.title2)
+            }
+        }
+    }
+
+    private var remotePairing: some View {
         HStack(spacing: 32) {
             if case .failed(let reason) = remoteServer.state {
                 Text("Controle indisponível: \(reason)")
@@ -304,6 +326,22 @@ struct SettingsView: View {
                 }
             }
         }
+    }
+
+    /// Registers the app as a login item, which opens it hidden (ADR 0021).
+    private func setLaunchesAtLogin(_ enabled: Bool) {
+        guard enabled != launchesAtLogin else { return }
+        do {
+            if enabled {
+                try SMAppService.mainApp.register()
+            } else {
+                try SMAppService.mainApp.unregister()
+            }
+            launchAtLoginError = nil
+        } catch {
+            launchAtLoginError = error.localizedDescription
+        }
+        launchesAtLogin = SMAppService.mainApp.status == .enabled
     }
 
     /// The on/off toggle and, once installed, the resolution; the progress while the SDK downloads (ADR 0018).

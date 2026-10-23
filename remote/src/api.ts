@@ -1,6 +1,6 @@
 export type Button =
   | 'up' | 'down' | 'left' | 'right' | 'ok' | 'back' | 'home'
-  | 'playPause' | 'volumeUp' | 'volumeDown' | 'mute' | 'delete'
+  | 'playPause' | 'volumeUp' | 'volumeDown' | 'mute' | 'delete' | 'power'
 
 /** A touchpad event; scroll deltas are the finger's, which the content follows (ADR 0012). */
 export type PointerEvent = { type: 'move' | 'scroll'; dx: number; dy: number } | { type: 'click' }

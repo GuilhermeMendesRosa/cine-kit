@@ -45,3 +45,4 @@ O objetivo é que qualquer pessoa — ou agente de IA — entenda **por que** o 
 | [0018](0018-sdk-android-instalado-pelo-app.md) | SDK Android instalado pelo próprio app | Proposto | 2026-10-22 |
 | [0019](0019-tema-escolhido-e-pareado-com-o-controle.md) | Tema escolhido no app e pareado com o controle | Proposto | 2026-10-22 |
 | [0020](0020-controle-sem-token.md) | Controle remoto numa URL fixa, sem token | Proposto | 2026-10-23 |
+| [0021](0021-abrir-no-login-e-botao-de-ligar.md) | Abrir no login e botão de ligar no controle | Proposto | 2026-10-23 |

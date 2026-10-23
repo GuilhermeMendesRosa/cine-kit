@@ -26,6 +26,12 @@ describe('press', () => {
     expect(new Headers(init.headers).has('Authorization')).toBe(false)
     expect(JSON.parse(init.body)).toEqual({ button: 'volumeUp' })
   })
+
+  it('sends power', async () => {
+    const fetch = vi.fn().mockResolvedValue(new Response(null, { status: 204 }))
+    expect(await press('power', { fetch })).toBe('ok')
+    expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({ button: 'power' })
+  })
 })
 
 describe('pointer', () => {

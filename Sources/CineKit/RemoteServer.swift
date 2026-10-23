@@ -114,9 +114,25 @@ final class RemoteServer {
         case .volumeUp: SystemVolume.adjust(.up)
         case .volumeDown: SystemVolume.adjust(.down)
         case .mute: SystemVolume.toggleMute()
+        case .power: togglePower()
         default:
             for keystroke in RemoteKeyMap.keystrokes(for: button) {
                 post(keystroke)
+            }
+        }
+    }
+
+    /// Off goes home, which pauses the open service (ADR 0014), then hides the app; on brings it back in full screen (ADR 0021).
+    private func togglePower() {
+        if NSApp.isActive, !NSApp.isHidden {
+            press(.home)
+            // On the next run loop cycle, after the posted keys reach the window.
+            DispatchQueue.main.async { NSApp.hide(nil) }
+        } else {
+            NSApp.unhide(nil)
+            NSApp.activate()
+            if let window = NSApp.windows.first, !window.styleMask.contains(.fullScreen) {
+                window.toggleFullScreen(nil)
             }
         }
     }

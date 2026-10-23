@@ -39,4 +39,8 @@ struct RemoteKeyMapTests {
         #expect(RemoteKeyMap.keystrokes(for: .volumeDown) == [])
         #expect(RemoteKeyMap.keystrokes(for: .mute) == [])
     }
+
+    @Test func powerHasNoKeystrokes() {
+        #expect(RemoteKeyMap.keystrokes(for: .power) == [])
+    }
 }
