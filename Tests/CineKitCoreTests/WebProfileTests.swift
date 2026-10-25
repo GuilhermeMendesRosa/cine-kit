@@ -26,4 +26,18 @@ struct WebProfileTests {
     @Test func otherServicesDoNotHandleBack() {
         #expect(!WebProfile.for(URL(string: "https://www.netflix.com")!).handlesBack)
     }
+
+    @Test(arguments: ["https://www.netflix.com", "https://netflix.com"])
+    func netflixBypassesHousehold(url: String) {
+        let url = URL(string: url)!
+        let profile = WebProfile.for(url)
+        #expect(profile.bypassesNetflixHousehold)
+        #expect(profile.usesSpatialNavigation)
+        #expect(profile.url == url)
+    }
+
+    @Test(arguments: ["https://www.youtube.com", "https://www.primevideo.com", "https://notnetflix.com"])
+    func otherServicesDoNotBypassHousehold(url: String) {
+        #expect(!WebProfile.for(URL(string: url)!).bypassesNetflixHousehold)
+    }
 }

@@ -26,6 +26,15 @@ struct ServiceWebView: NSViewRepresentable {
                     WKUserScript(source: script, injectionTime: .atDocumentStart, forMainFrameOnly: true)
                 )
             }
+            if profile.bypassesNetflixHousehold {
+                for name in ["flixbypass-inject-early", "flixbypass-content"] {
+                    let scriptURL = Bundle.resources.url(forResource: name, withExtension: "js")!
+                    let script = try! String(contentsOf: scriptURL, encoding: .utf8)
+                    configuration.userContentController.addUserScript(
+                        WKUserScript(source: script, injectionTime: .atDocumentStart, forMainFrameOnly: true)
+                    )
+                }
+            }
             let webView = FocusingWebView(frame: .zero, configuration: configuration)
             webView.customUserAgent = profile.userAgent ?? Self.safariUserAgent
             webView.load(URLRequest(url: profile.url))
