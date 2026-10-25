@@ -48,6 +48,8 @@ struct SettingsView: View {
     @State private var launchesAtLogin = SMAppService.mainApp.status == .enabled
     @State private var launchAtLoginError: String?
     @AppStorage("androidResolution") private var androidResolution = AndroidRuntime.Resolution.hd1080
+    @AppStorage("androidCores") private var androidCores = AndroidRuntime.Hardware.defaultCores
+    @AppStorage("androidMemory") private var androidMemory = AndroidRuntime.Hardware.defaultMemoryMB
     @AppStorage("appTheme") private var theme = AppTheme.dark
     @FocusState private var hasKeyboardFocus: Bool
 
@@ -114,8 +116,8 @@ struct SettingsView: View {
             let row = min(focus.row, counts.count - 1)
             focus = SettingsFocusTarget(row: row, column: min(focus.column, counts[row] - 1))
         }
-        .onChange(of: androidResolution) { _, resolution in
-            Task { try? await androidRuntime?.restart(resolution: resolution) }
+        .onChange(of: hardware) { _, hardware in
+            Task { try? await androidRuntime?.restart(hardware) }
         }
         .overlay {
             if isInstalling || isChangingIdentity {
@@ -168,13 +170,17 @@ struct SettingsView: View {
         }
     }
 
-    // Rows of the focus grid: back, theme, one per app, add/restore, Android on/off, resolution and identity, launch at login.
+    // Rows of the focus grid: back, theme, one per app, add/restore, Android on/off, resolution, cores, memory and identity, launch at login.
     private static let backRow = 0
     private static let themeRow = 1
     private static let firstAppRow = 2
     private var actionsRow: Int { Self.firstAppRow + apps.count }
 
     private var apps: [StreamingApp] { store.visibleApps(androidEnabled: androidSetup.isEnabled) }
+
+    private var hardware: AndroidRuntime.Hardware {
+        AndroidRuntime.Hardware(resolution: androidResolution, cores: androidCores, memoryMB: androidMemory)
+    }
 
     private var rows: [[Control]] {
         var rows = [
@@ -203,6 +209,12 @@ struct SettingsView: View {
                 Control(title: resolution == .hd1080 ? "1080p" : "4K", isSelected: androidResolution == resolution) {
                     androidResolution = resolution
                 }
+            })
+            rows.append(AndroidRuntime.Hardware.coreOptions().map { cores in
+                Control(title: "\(cores)", isSelected: hardware.cores == cores) { androidCores = cores }
+            })
+            rows.append(AndroidRuntime.Hardware.memoryOptions().map { memory in
+                Control(title: "\(memory / 1024) GB", isSelected: hardware.memoryMB == memory) { androidMemory = memory }
             })
             let identity = androidSetup.identity
             rows.append([Control(
@@ -344,7 +356,7 @@ struct SettingsView: View {
         launchesAtLogin = SMAppService.mainApp.status == .enabled
     }
 
-    /// The on/off toggle and, once installed, the resolution; the progress while the SDK downloads (ADR 0018).
+    /// The on/off toggle and, once installed, the resolution, cores and memory; the progress while the SDK downloads (ADR 0018, 0022).
     private func androidSection(_ rows: [[Control]]) -> some View {
         VStack(alignment: .leading, spacing: 24) {
             if case .installing(let step, let fraction) = androidSetup.installer.state {
@@ -368,10 +380,22 @@ struct SettingsView: View {
                         controls(rows, row: actionsRow + 2)
                     }
                     HStack(spacing: 16) {
-                        Text("Identidade")
+                        Text("Núcleos")
                             .font(.title2)
                             .frame(width: 200, alignment: .leading)
                         controls(rows, row: actionsRow + 3)
+                    }
+                    HStack(spacing: 16) {
+                        Text("Memória")
+                            .font(.title2)
+                            .frame(width: 200, alignment: .leading)
+                        controls(rows, row: actionsRow + 4)
+                    }
+                    HStack(spacing: 16) {
+                        Text("Identidade")
+                            .font(.title2)
+                            .frame(width: 200, alignment: .leading)
+                        controls(rows, row: actionsRow + 5)
                     }
                 } else if androidSetup.runtime == nil {
                     Text(AndroidSetup.installMessage)

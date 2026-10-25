@@ -42,12 +42,16 @@ final class AndroidSetup {
     func changeIdentity() async throws {
         guard let runtime else { return }
         let identity = AndroidIdentity.random()
-        try await runtime.apply(identity, resolution: resolution)
+        try await runtime.apply(identity, hardware)
         self.identity = identity
     }
 
-    private var resolution: AndroidRuntime.Resolution {
-        UserDefaults.standard.string(forKey: "androidResolution").flatMap(AndroidRuntime.Resolution.init) ?? .hd1080
+    private var hardware: AndroidRuntime.Hardware {
+        AndroidRuntime.Hardware(
+            resolution: UserDefaults.standard.string(forKey: "androidResolution").flatMap(AndroidRuntime.Resolution.init) ?? .hd1080,
+            cores: UserDefaults.standard.integer(forKey: "androidCores"),
+            memoryMB: UserDefaults.standard.integer(forKey: "androidMemory")
+        )
     }
 
     func start() {
@@ -55,7 +59,7 @@ final class AndroidSetup {
         // On with the SDK incomplete, e.g. after a failed or interrupted install: finishes it.
         guard let runtime else { return install() }
         // A failure here is retried when an Android app is opened.
-        Task { try? await runtime.start(resolution: resolution) }
+        Task { try? await runtime.start(hardware) }
     }
 
     func enable() {

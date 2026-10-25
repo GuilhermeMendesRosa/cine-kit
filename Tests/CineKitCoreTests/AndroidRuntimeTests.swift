@@ -47,28 +47,38 @@ struct AndroidRuntimeTests {
         runtime = AndroidRuntime(sdk: sdk, runner: runner, sleep: { _ in })
     }
 
+    private func hardware(_ resolution: AndroidRuntime.Resolution, cores: Int = 4, memoryMB: Int = 2048) -> AndroidRuntime.Hardware {
+        AndroidRuntime.Hardware(resolution: resolution, cores: cores, memoryMB: memoryMB, hostCores: 10, physicalMemory: 16 << 30)
+    }
+
     @Test func startLaunchesHeadlessEmulatorWith1080pSkin() async throws {
         runner.respond("devices", "List of devices attached\n\n")
 
-        try await runtime.start(resolution: .hd1080)
+        try await runtime.start(hardware(.hd1080))
 
         #expect(runner.launched == [
-            "emulator -avd cinekit-tv -no-window -no-boot-anim -share-vid -feature -HardwareDecoder -skin 1920x1080 -prop qemu.sf.lcd_density=320",
+            "emulator -avd cinekit-tv -no-window -no-boot-anim -share-vid -feature -HardwareDecoder -skin 1920x1080 -prop qemu.sf.lcd_density=320 -cores 4 -memory 2048",
         ])
     }
 
     @Test func startUses4KSkinAndDensity() async throws {
-        try await runtime.start(resolution: .uhd4k)
+        try await runtime.start(hardware(.uhd4k))
 
         #expect(runner.launched == [
-            "emulator -avd cinekit-tv -no-window -no-boot-anim -share-vid -feature -HardwareDecoder -skin 3840x2160 -prop qemu.sf.lcd_density=640",
+            "emulator -avd cinekit-tv -no-window -no-boot-anim -share-vid -feature -HardwareDecoder -skin 3840x2160 -prop qemu.sf.lcd_density=640 -cores 4 -memory 2048",
         ])
+    }
+
+    @Test func startPassesTheChosenCoresAndMemory() async throws {
+        try await runtime.start(hardware(.hd1080, cores: 8, memoryMB: 8192))
+
+        #expect(runner.launched.first?.hasSuffix("-cores 8 -memory 8192") == true)
     }
 
     @Test func startReusesRunningEmulator() async throws {
         runner.respond("devices", "List of devices attached\nemulator-5554\tdevice\n\n")
 
-        try await runtime.start(resolution: .hd1080)
+        try await runtime.start(hardware(.hd1080))
 
         #expect(runner.launched.isEmpty)
     }
@@ -129,7 +139,7 @@ struct AndroidRuntimeTests {
     @Test func ensureRunningRestartsDeadEmulatorOnce() async throws {
         runner.respond("devices", "List of devices attached\n\n")
 
-        try await runtime.ensureRunning(resolution: .hd1080)
+        try await runtime.ensureRunning(hardware(.hd1080))
 
         #expect(runner.launched.count == 1)
     }
@@ -146,14 +156,14 @@ struct AndroidRuntimeTests {
         #expect(runner.calls == ["adb -s emulator-5554 shell input keyevent 127"])
     }
 
-    @Test func restartStopsThenStartsWithNewResolution() async throws {
+    @Test func restartStopsThenStartsWithNewHardware() async throws {
         runner.respond("devices", "List of devices attached\nemulator-5554\tdevice\n\n", "List of devices attached\n\n")
 
-        try await runtime.restart(resolution: .uhd4k)
+        try await runtime.restart(hardware(.uhd4k, cores: 6, memoryMB: 4096))
 
         #expect(runner.launched == [
             "adb -s emulator-5554 emu kill",
-            "emulator -avd cinekit-tv -no-window -no-boot-anim -share-vid -feature -HardwareDecoder -skin 3840x2160 -prop qemu.sf.lcd_density=640",
+            "emulator -avd cinekit-tv -no-window -no-boot-anim -share-vid -feature -HardwareDecoder -skin 3840x2160 -prop qemu.sf.lcd_density=640 -cores 6 -memory 4096",
         ])
     }
 
@@ -162,7 +172,7 @@ struct AndroidRuntimeTests {
         identity.serial = "0123456789ABCDEF"
         runtime.identity = identity
 
-        try await runtime.start(resolution: .hd1080)
+        try await runtime.start(hardware(.hd1080))
 
         #expect(runner.launched.first?.hasSuffix("-ramdisk /data/identity-ramdisk.img -android-serialno 0123456789ABCDEF") == true)
     }
@@ -181,7 +191,7 @@ struct AndroidRuntimeTests {
         var identity = AndroidIdentity.profiles[1]
         identity.serial = "0123456789ABCDEF"
 
-        try await runtime.apply(identity, resolution: .hd1080)
+        try await runtime.apply(identity, hardware(.hd1080))
 
         let backup = directory.appending(path: "identity-apks/org.jellyfin.androidtv").path(percentEncoded: false)
         #expect(runner.calls.contains("adb -s emulator-5554 pull /data/app/x/base.apk \(backup)/base.apk"))

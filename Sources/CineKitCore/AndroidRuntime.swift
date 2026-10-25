@@ -30,6 +30,36 @@ public final class AndroidRuntime {
         }
     }
 
+    /// The emulator's screen, CPU and RAM; `-cores` and `-memory` override the AVD's `config.ini`.
+    public struct Hardware: Equatable, Sendable {
+        public static let defaultCores = 4
+        public static let defaultMemoryMB = 2048
+
+        public var resolution: Resolution
+        public var cores: Int
+        public var memoryMB: Int
+
+        public static func coreOptions(hostCores: Int = ProcessInfo.processInfo.activeProcessorCount) -> [Int] {
+            [2, 4, 6, 8].filter { $0 <= hostCores }
+        }
+
+        /// Up to half the Mac's RAM, so the emulator never starves it.
+        public static func memoryOptions(physicalMemory: UInt64 = ProcessInfo.processInfo.physicalMemory) -> [Int] {
+            [2048, 4096, 8192].filter { UInt64($0) <= (physicalMemory >> 20) / 2 }
+        }
+
+        /// Falls back to the default when the saved value is not an option on this Mac.
+        public init(
+            resolution: Resolution, cores: Int, memoryMB: Int,
+            hostCores: Int = ProcessInfo.processInfo.activeProcessorCount,
+            physicalMemory: UInt64 = ProcessInfo.processInfo.physicalMemory
+        ) {
+            self.resolution = resolution
+            self.cores = Self.coreOptions(hostCores: hostCores).contains(cores) ? cores : Self.defaultCores
+            self.memoryMB = Self.memoryOptions(physicalMemory: physicalMemory).contains(memoryMB) ? memoryMB : Self.defaultMemoryMB
+        }
+    }
+
     public static let serial = "emulator-5554"
     private static let logger = Logger(subsystem: "dev.guilhermemendes.CineKit", category: "AndroidRuntime")
 
@@ -46,16 +76,17 @@ public final class AndroidRuntime {
         self.sleep = sleep
     }
 
-    public func start(resolution: Resolution) async throws {
+    public func start(_ hardware: Hardware) async throws {
         if try await deviceState() == "device" { return }
-        emulator = try runner.launch(sdk.emulator, arguments(resolution: resolution))
+        emulator = try runner.launch(sdk.emulator, arguments(hardware))
     }
 
-    private func arguments(resolution: Resolution) -> [String] {
+    private func arguments(_ hardware: Hardware) -> [String] {
         // The goldfish hardware decoders never return frames in a headless emulator; the software ones do.
         var arguments = [
             "-avd", sdk.avdName, "-no-window", "-no-boot-anim", "-share-vid", "-feature", "-HardwareDecoder",
-            "-skin", resolution.skin, "-prop", "qemu.sf.lcd_density=\(resolution.density)",
+            "-skin", hardware.resolution.skin, "-prop", "qemu.sf.lcd_density=\(hardware.resolution.density)",
+            "-cores", "\(hardware.cores)", "-memory", "\(hardware.memoryMB)",
         ]
         if let identity {
             arguments += ["-ramdisk", sdk.identityRamdisk.path(percentEncoded: false), "-android-serialno", identity.serial]
@@ -73,16 +104,16 @@ public final class AndroidRuntime {
         throw AndroidRuntimeError.bootTimeout
     }
 
-    /// Changing the resolution needs a cold start: `-skin` only applies at launch.
-    public func restart(resolution: Resolution) async throws {
+    /// Changing the hardware needs a cold start: these flags only apply at launch.
+    public func restart(_ hardware: Hardware) async throws {
         try await stopAndWait()
-        try await start(resolution: resolution)
+        try await start(hardware)
     }
 
     /// Without root, a new ANDROID_ID takes wiping the data, so the third-party APKs are pulled first and installed back.
     /// The first boot is cold, since a snapshot would bring back the old props; later ones save and load snapshots as usual.
-    public func apply(_ identity: AndroidIdentity, resolution: Resolution) async throws {
-        try await ensureRunning(resolution: resolution)
+    public func apply(_ identity: AndroidIdentity, _ hardware: Hardware) async throws {
+        try await ensureRunning(hardware)
         try await waitUntilBooted()
         let backup = sdk.dataDirectory.appending(path: "identity-apks")
         try? FileManager.default.removeItem(at: backup)
@@ -108,7 +139,7 @@ public final class AndroidRuntime {
         try identity.ramdisk(appendingTo: stock).write(to: sdk.identityRamdisk)
         self.identity = identity
         try await stopAndWait()
-        emulator = try runner.launch(sdk.emulator, arguments(resolution: resolution) + ["-wipe-data", "-no-snapshot-load"])
+        emulator = try runner.launch(sdk.emulator, arguments(hardware) + ["-wipe-data", "-no-snapshot-load"])
         try await waitUntilBooted(timeout: 300)
         _ = try await adb("shell", "settings", "put", "global", "verifier_verify_adb_installs", "0")
         for apks in apps where !apks.isEmpty {
@@ -125,9 +156,9 @@ public final class AndroidRuntime {
     }
 
     /// Starts the emulator again when `adb devices` no longer lists it.
-    public func ensureRunning(resolution: Resolution) async throws {
+    public func ensureRunning(_ hardware: Hardware) async throws {
         guard try await deviceState() == nil else { return }
-        try await start(resolution: resolution)
+        try await start(hardware)
     }
 
     public func install(apk: URL) async throws -> (package: String, label: String) {

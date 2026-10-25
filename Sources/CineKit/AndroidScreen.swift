@@ -20,6 +20,8 @@ struct AndroidScreen: View {
     @State private var client: ScrcpyClient?
     @State private var keyMonitor: Any?
     @AppStorage("androidResolution") private var resolution = AndroidRuntime.Resolution.hd1080
+    @AppStorage("androidCores") private var cores = AndroidRuntime.Hardware.defaultCores
+    @AppStorage("androidMemory") private var memoryMB = AndroidRuntime.Hardware.defaultMemoryMB
 
     var body: some View {
         Group {
@@ -64,7 +66,7 @@ struct AndroidScreen: View {
         }
         do {
             let deadline = ContinuousClock.now + .seconds(90)
-            try await runtime.ensureRunning(resolution: resolution)
+            try await runtime.ensureRunning(AndroidRuntime.Hardware(resolution: resolution, cores: cores, memoryMB: memoryMB))
             try await runtime.waitUntilBooted()
             try await runtime.launch(package: package)
             while try await runtime.foregroundPackage() != package {

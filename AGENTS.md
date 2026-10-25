@@ -70,7 +70,7 @@ Apps Android ([ADR 0004](architecture/0004-apps-android-via-emulador.md), [0018]
 
 - O próprio app instala o SDK (Configurações → Android → Apps Android → Ligado): baixa os zips fixados em `AndroidSDKPackage` para `~/Library/Application Support/CineKit/android/sdk`, o scrcpy-server para `~/Library/Application Support/CineKit/android/` e escreve o AVD `cinekit-tv` em `~/.android/avd`. Sem Homebrew nem Java.
 - O app **não lê `ANDROID_HOME`**: apps abertos pelo Finder não herdam o ambiente, então o caminho é fixo em `AndroidSDK.default`.
-- Para testar a instalação do zero, apague `~/Library/Application Support/CineKit/android` e `~/.android/avd/cinekit-tv.*`, e `defaults delete dev.guilhermemendes.CineKit androidEnabled` para o toggle voltar ao padrão.
+- Para testar a instalação do zero, apague `~/Library/Application Support/CineKit/android` e `~/.android/avd/cinekit-tv.*`, e `defaults delete dev.guilhermemendes.CineKit androidEnabled` para o toggle voltar ao padrão; `defaults delete dev.guilhermemendes.CineKit androidCores` e `androidMemory` voltam núcleos e memória ao padrão.
 
 Armadilhas das Command Line Tools:
 
