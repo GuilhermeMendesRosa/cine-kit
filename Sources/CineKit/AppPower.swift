@@ -1,15 +1,16 @@
 import AppKit
 
-/// The remote's power button: hides the app when it is on screen, else brings it to the front in full screen (ADR 0021).
+/// The remote's power button: hides the app when it is on, else brings it to the front in full screen, making a new
+/// window if it was closed (ADR 0021).
 @MainActor
 enum AppPower {
     private static var mainWindow: NSWindow? {
         NSApp.windows.first { $0.canBecomeMain }
     }
 
-    /// On screen, whichever app is active; a full screen window in another Space is not.
+    /// Not hidden and in full screen, however it got there; a full screen window in another Space counts too.
     static var isOn: Bool {
-        !NSApp.isHidden && mainWindow?.occlusionState.contains(.visible) == true
+        !NSApp.isHidden && mainWindow?.styleMask.contains(.fullScreen) == true
     }
 
     /// `goHome` runs before hiding, so the open service pauses (ADR 0014).
@@ -17,9 +18,23 @@ enum AppPower {
         if isOn {
             goHome()
             // On the next run loop cycle, after the posted keys reach the window.
-            DispatchQueue.main.async { NSApp.hide(nil) }
+            DispatchQueue.main.async { turnOff() }
         } else {
             turnOn()
+        }
+    }
+
+    /// Leaves full screen before hiding, so no empty Space is left behind.
+    private static func turnOff() {
+        guard let window = mainWindow, window.styleMask.contains(.fullScreen) else {
+            NSApp.hide(nil)
+            return
+        }
+        let exited = NotificationCenter.default.notifications(named: NSWindow.didExitFullScreenNotification, object: window)
+        window.toggleFullScreen(nil)
+        Task {
+            for await _ in exited { break }
+            NSApp.hide(nil)
         }
     }
 
@@ -35,7 +50,8 @@ enum AppPower {
             // Full screen is ignored while the window is still coming back on screen, so retry until it takes.
             for _ in 0..<12 {
                 try? await Task.sleep(for: .milliseconds(250))
-                guard let window = mainWindow else { return }
+                // A closed window comes back from the reopen, a moment after the app activates.
+                guard let window = mainWindow else { continue }
                 if window.styleMask.contains(.fullScreen) { return }
                 if NSApp.isActive {
                     window.toggleFullScreen(nil)

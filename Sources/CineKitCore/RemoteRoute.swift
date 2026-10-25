@@ -62,6 +62,7 @@ public enum RemoteRoute {
 
     private struct State: Encodable {
         let clickSound: Bool
+        let power: Bool
         let theme: String
     }
 
@@ -69,9 +70,10 @@ public enum RemoteRoute {
     static let maxTextLength = 256
 
     /// `clickSound` is the remote's click sound for the open app (ADR 0015). `theme` is the app's theme, shared with the
-    /// remote (ADR 0019). `staticFile` reads a file of the web app by its path relative to the app's folder.
+    /// remote (ADR 0019). `power` is whether the app is on (ADR 0021). `staticFile` reads a file of the web app by its
+    /// path relative to the app's folder.
     public static func response(
-        for request: RemoteHTTPRequest, clickSound: Bool, theme: AppTheme, staticFile: (String) -> Data?
+        for request: RemoteHTTPRequest, clickSound: Bool, theme: AppTheme, power: Bool, staticFile: (String) -> Data?
     ) -> RemoteResponse {
         if request.path == "/api/press", request.method == "POST" {
             return press(request)
@@ -88,7 +90,7 @@ public enum RemoteRoute {
         if request.path == "/api/state", request.method == "GET" {
             let encoder = JSONEncoder()
             encoder.outputFormatting = .sortedKeys
-            let body = (try? encoder.encode(State(clickSound: clickSound, theme: theme.rawValue))) ?? Data()
+            let body = (try? encoder.encode(State(clickSound: clickSound, power: power, theme: theme.rawValue))) ?? Data()
             return RemoteResponse(status: 200, headers: ["Content-Type": "application/json"], body: body)
         }
         guard request.method == "GET", !request.path.hasPrefix("/api/") else { return RemoteResponse(status: 404) }

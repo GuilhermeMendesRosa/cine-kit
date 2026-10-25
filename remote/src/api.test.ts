@@ -49,12 +49,17 @@ describe('pointer', () => {
 describe('fetchState', () => {
   it('returns the click sound on 200', async () => {
     const fetch = vi.fn().mockResolvedValue(Response.json({ clickSound: false }))
-    expect(await fetchState({ fetch })).toEqual({ clickSound: false, theme: 'dark' })
+    expect(await fetchState({ fetch })).toEqual({ clickSound: false, theme: 'dark', power: false })
   })
 
   it('returns the theme on 200', async () => {
     const fetch = vi.fn().mockResolvedValue(Response.json({ clickSound: true, theme: 'light' }))
-    expect(await fetchState({ fetch })).toEqual({ clickSound: true, theme: 'light' })
+    expect(await fetchState({ fetch })).toEqual({ clickSound: true, theme: 'light', power: false })
+  })
+
+  it('returns power on 200', async () => {
+    const fetch = vi.fn().mockResolvedValue(Response.json({ clickSound: true, theme: 'dark', power: true }))
+    expect(await fetchState({ fetch })).toEqual({ clickSound: true, theme: 'dark', power: true })
   })
 
   it('is offline on 401', async () => {

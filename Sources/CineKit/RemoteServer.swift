@@ -96,7 +96,7 @@ final class RemoteServer {
     private func respond(to request: RemoteHTTPRequest) -> RemoteResponse {
         let folder = Bundle.main.resourceURL?.appending(path: "remote")
         let theme = AppTheme(rawValue: UserDefaults.standard.string(forKey: Self.themeKey) ?? "") ?? .dark
-        let response = RemoteRoute.response(for: request, clickSound: clickSound, theme: theme) { path in
+        let response = RemoteRoute.response(for: request, clickSound: clickSound, theme: theme, power: AppPower.isOn) { path in
             folder.flatMap { try? Data(contentsOf: $0.appending(path: path)) }
         }
         if response.status == 400 {

@@ -8,9 +8,11 @@ struct RemoteRouteTests {
         "assets/app.js": Data("js".utf8),
     ]
 
-    private func respond(_ raw: String, clickSound: Bool = true, theme: AppTheme = .dark) throws -> RemoteResponse {
+    private func respond(
+        _ raw: String, clickSound: Bool = true, theme: AppTheme = .dark, power: Bool = false
+    ) throws -> RemoteResponse {
         let request = try #require(RemoteHTTPRequest.parse(Data(raw.utf8)))
-        return RemoteRoute.response(for: request, clickSound: clickSound, theme: theme) { files[$0] }
+        return RemoteRoute.response(for: request, clickSound: clickSound, theme: theme, power: power) { files[$0] }
     }
 
     private func press(_ body: String) throws -> RemoteResponse {
@@ -75,7 +77,7 @@ struct RemoteRouteTests {
     @Test func rejectsPathTraversal() throws {
         let request = try #require(RemoteHTTPRequest.parse(Data("GET /../secret.txt HTTP/1.1\r\n\r\n".utf8)))
         var asked = false
-        let response = RemoteRoute.response(for: request, clickSound: true, theme: .dark) { _ in
+        let response = RemoteRoute.response(for: request, clickSound: true, theme: .dark, power: false) { _ in
             asked = true
             return Data()
         }
@@ -94,12 +96,17 @@ struct RemoteRouteTests {
         let response = try respond("GET /api/state HTTP/1.1\r\n\r\n", clickSound: false)
         #expect(response.status == 200)
         #expect(response.headers["Content-Type"] == "application/json")
-        #expect(response.body == Data(#"{"clickSound":false,"theme":"dark"}"#.utf8))
+        #expect(response.body == Data(#"{"clickSound":false,"power":false,"theme":"dark"}"#.utf8))
     }
 
     @Test func stateReturnsTheme() throws {
         let response = try respond("GET /api/state HTTP/1.1\r\n\r\n", theme: .light)
         #expect(String(decoding: response.body, as: UTF8.self).contains(#""theme":"light""#))
+    }
+
+    @Test func stateReturnsPower() throws {
+        let response = try respond("GET /api/state HTTP/1.1\r\n\r\n", power: true)
+        #expect(String(decoding: response.body, as: UTF8.self).contains(#""power":true"#))
     }
 
     @Test func themeReturns204WithTheTheme() throws {
@@ -118,7 +125,7 @@ struct RemoteRouteTests {
     @Test func stateWithoutAuthorizationIsServed() throws {
         let response = try respond("GET /api/state HTTP/1.1\r\n\r\n")
         #expect(response.status == 200)
-        #expect(response.body == Data(#"{"clickSound":true,"theme":"dark"}"#.utf8))
+        #expect(response.body == Data(#"{"clickSound":true,"power":false,"theme":"dark"}"#.utf8))
     }
 
     @Test func pointerClickReturns204() throws {

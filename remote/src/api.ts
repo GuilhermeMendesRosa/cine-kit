@@ -33,15 +33,22 @@ export function setTheme(theme: Theme, options: Options = {}): Promise<PressResu
   return post('/api/theme', { theme }, options)
 }
 
-/** Reads the Mac's state for the remote: whether the open app wants the click sound (ADR 0015) and the theme (ADR 0019). */
+/**
+ * Reads the Mac's state for the remote: whether the open app wants the click sound (ADR 0015), the theme (ADR 0019)
+ * and whether the app is on (ADR 0021).
+ */
 export async function fetchState(
   { fetch = globalThis.fetch }: Options = {},
-): Promise<{ clickSound: boolean; theme: Theme } | 'offline'> {
+): Promise<{ clickSound: boolean; theme: Theme; power: boolean } | 'offline'> {
   try {
     const response = await fetch('/api/state', { signal: AbortSignal.timeout(timeoutMs) })
     if (response.ok) {
       const json = await response.json()
-      return { clickSound: json.clickSound === true, theme: json.theme === 'light' ? 'light' : 'dark' }
+      return {
+        clickSound: json.clickSound === true,
+        theme: json.theme === 'light' ? 'light' : 'dark',
+        power: json.power === true,
+      }
     }
     return 'offline'
   } catch {

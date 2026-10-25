@@ -41,7 +41,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             NSApp.activate()
         }
         DispatchQueue.main.async {
-            if !launchedAtLogin { NSApp.windows.first?.toggleFullScreen(nil) }
             // After the window exists, which it needs for mouse-moved events.
             self.inputMode.start()
         }

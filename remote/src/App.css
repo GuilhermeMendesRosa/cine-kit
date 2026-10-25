@@ -183,7 +183,8 @@ main {
   background: var(--glass-pressed);
 }
 
-.key-keyboard[aria-pressed='true'] {
+.key-keyboard[aria-pressed='true'],
+.key-power[aria-pressed='true'] {
   background: var(--glass-pressed);
 }
 

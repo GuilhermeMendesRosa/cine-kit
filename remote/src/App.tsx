@@ -22,6 +22,7 @@ function feedback() {
 export default function App() {
   const [offline, setOffline] = useState(false)
   const [theme, setThemeState] = useState(() => loadTheme(localStorage))
+  const [power, setPower] = useState(false)
 
   // The Mac's theme (ADR 0019).
   useEffect(() => {
@@ -44,7 +45,14 @@ export default function App() {
     handleResult(await setTheme(next))
   }
 
-  // The open app may turn the click sound off (ADR 0015) and the Mac sets the theme (ADR 0019); offline keeps the last values.
+  // Optimistic like the theme; the next /api/state says whether the Mac really turned on or off (ADR 0021).
+  async function togglePower() {
+    setPower(!power)
+    await send('power')
+  }
+
+  // The open app may turn the click sound off (ADR 0015), the Mac sets the theme (ADR 0019) and says whether it is on
+  // (ADR 0021); offline keeps the last values.
   useEffect(() => {
     async function refresh() {
       if (document.visibilityState !== 'visible') return
@@ -52,6 +60,7 @@ export default function App() {
       if (state !== 'offline') {
         clickSound.enabled = state.clickSound
         setThemeState(state.theme)
+        setPower(state.power)
       }
     }
     void refresh()
@@ -71,7 +80,7 @@ export default function App() {
       <p className="status" aria-live="polite">{offline ? 'Mac não encontrado' : ''}</p>
       <div className="top">
         <div className="top-row">
-          <Key button="power" label="Ligar ou desligar" onPress={send}><PowerIcon /></Key>
+          <Key button="power" label="Ligar ou desligar" pressed={power} onPress={() => void togglePower()}><PowerIcon /></Key>
           <div className="volume glass">
             <Key button="volumeDown" label="Diminuir volume" onPress={send}><VolumeIcon sign="−" /></Key>
             <Key button="volumeUp" label="Aumentar volume" onPress={send}><VolumeIcon sign="+" /></Key>
@@ -107,9 +116,10 @@ export default function App() {
   )
 }
 
-function Key({ button, label, onPress, children }: {
+function Key({ button, label, pressed, onPress, children }: {
   button: Button
   label: string
+  pressed?: boolean
   onPress: (button: Button) => void
   children: ReactNode
 }) {
@@ -127,6 +137,7 @@ function Key({ button, label, onPress, children }: {
       type="button"
       className={`key key-${button}`}
       aria-label={label}
+      aria-pressed={pressed}
       onPointerDown={() => {
         release()
         feedback()
