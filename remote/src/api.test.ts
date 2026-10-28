@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { fetchState, pointer, press, setTheme, typeText } from './api'
+import { fetchState, pointer, press, setSleep, setTheme, typeText } from './api'
 
 describe('press', () => {
   it('is ok on 204', async () => {
@@ -49,17 +49,25 @@ describe('pointer', () => {
 describe('fetchState', () => {
   it('returns the click sound on 200', async () => {
     const fetch = vi.fn().mockResolvedValue(Response.json({ clickSound: false }))
-    expect(await fetchState({ fetch })).toEqual({ clickSound: false, theme: 'dark', power: false })
+    expect(await fetchState({ fetch })).toEqual({ clickSound: false, theme: 'dark', power: false, sleep: null })
   })
 
   it('returns the theme on 200', async () => {
     const fetch = vi.fn().mockResolvedValue(Response.json({ clickSound: true, theme: 'light' }))
-    expect(await fetchState({ fetch })).toEqual({ clickSound: true, theme: 'light', power: false })
+    expect(await fetchState({ fetch })).toEqual({ clickSound: true, theme: 'light', power: false, sleep: null })
   })
 
   it('returns power on 200', async () => {
     const fetch = vi.fn().mockResolvedValue(Response.json({ clickSound: true, theme: 'dark', power: true }))
-    expect(await fetchState({ fetch })).toEqual({ clickSound: true, theme: 'dark', power: true })
+    expect(await fetchState({ fetch })).toEqual({ clickSound: true, theme: 'dark', power: true, sleep: null })
+  })
+
+  it('returns sleep on 200', async () => {
+    const fetch = vi.fn()
+      .mockResolvedValueOnce(Response.json({ clickSound: true, sleep: 1740 }))
+      .mockResolvedValueOnce(Response.json({ clickSound: true, sleep: null }))
+    expect(await fetchState({ fetch })).toMatchObject({ sleep: 1740 })
+    expect(await fetchState({ fetch })).toMatchObject({ sleep: null })
   })
 
   it('is offline on 401', async () => {
@@ -103,5 +111,21 @@ describe('setTheme', () => {
     expect(init.method).toBe('POST')
     expect(new Headers(init.headers).has('Authorization')).toBe(false)
     expect(JSON.parse(init.body)).toEqual({ theme: 'dark' })
+  })
+})
+
+describe('setSleep', () => {
+  it('sends the minutes', async () => {
+    const fetch = vi.fn().mockResolvedValue(new Response(null, { status: 204 }))
+    expect(await setSleep(30, { fetch })).toBe('ok')
+    const [url, init] = fetch.mock.calls[0]
+    expect(url).toBe('/api/sleep')
+    expect(init.method).toBe('POST')
+    expect(JSON.parse(init.body)).toEqual({ minutes: 30 })
+  })
+
+  it('is offline when fetch rejects', async () => {
+    const fetch = vi.fn().mockRejectedValue(new TypeError('Load failed'))
+    expect(await setSleep(30, { fetch })).toBe('offline')
   })
 })

@@ -15,17 +15,19 @@ enum AppPower {
 
     /// `goHome` runs before hiding, so the open service pauses (ADR 0014).
     static func toggle(goHome: () -> Void) {
-        if isOn {
-            goHome()
-            // On the next run loop cycle, after the posted keys reach the window.
-            DispatchQueue.main.async { turnOff() }
-        } else {
-            turnOn()
-        }
+        if isOn { turnOff(goHome: goHome) } else { turnOn() }
+    }
+
+    /// Does nothing when the app is already off, so the sleep timer never turns it back on (ADR 0024).
+    static func turnOff(goHome: () -> Void) {
+        guard isOn else { return }
+        goHome()
+        // On the next run loop cycle, after the posted keys reach the window.
+        DispatchQueue.main.async { finishTurningOff() }
     }
 
     /// Leaves full screen before hiding, so no empty Space is left behind.
-    private static func turnOff() {
+    private static func finishTurningOff() {
         guard let window = mainWindow, window.styleMask.contains(.fullScreen) else {
             NSApp.hide(nil)
             return

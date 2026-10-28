@@ -51,6 +51,7 @@ struct SettingsView: View {
     @AppStorage("androidCores") private var androidCores = AndroidRuntime.Hardware.defaultCores
     @AppStorage("androidMemory") private var androidMemory = AndroidRuntime.Hardware.defaultMemoryMB
     @AppStorage("appTheme") private var theme = AppTheme.dark
+    @AppStorage("lockOnSleep") private var locksOnSleep = false
     @FocusState private var hasKeyboardFocus: Bool
 
     var body: some View {
@@ -170,7 +171,7 @@ struct SettingsView: View {
         }
     }
 
-    // Rows of the focus grid: back, theme, one per app, add/restore, Android on/off, resolution, cores, memory and identity, launch at login.
+    // Rows of the focus grid: back, theme, one per app, add/restore, Android on/off, resolution, cores, memory and identity, launch at login, lock on sleep.
     private static let backRow = 0
     private static let themeRow = 1
     private static let firstAppRow = 2
@@ -227,6 +228,10 @@ struct SettingsView: View {
         rows.append([
             Control(title: "Desligado", isSelected: !launchesAtLogin) { setLaunchesAtLogin(false) },
             Control(title: "Ligado", isSelected: launchesAtLogin) { setLaunchesAtLogin(true) },
+        ])
+        rows.append([
+            Control(title: "Desligado", isSelected: !locksOnSleep) { locksOnSleep = false },
+            Control(title: "Ligado", isSelected: locksOnSleep) { locksOnSleep = true },
         ])
         return rows
     }
@@ -309,11 +314,16 @@ struct SettingsView: View {
             HStack(spacing: 16) {
                 Text("Abrir ao iniciar o Mac")
                     .font(.title2)
-                controls(rows, row: rows.count - 1)
+                controls(rows, row: rows.count - 2)
             }
             if let launchAtLoginError {
                 Text("Não foi possível mudar: \(launchAtLoginError)")
                     .font(.title2)
+            }
+            HStack(spacing: 16) {
+                Text("Bloquear o Mac ao fim do timer")
+                    .font(.title2)
+                controls(rows, row: rows.count - 1)
             }
         }
     }

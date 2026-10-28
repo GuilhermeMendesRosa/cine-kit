@@ -163,12 +163,13 @@ main {
 
 .actions {
   display: grid;
-  grid-template-columns: repeat(3, 64px);
-  column-gap: 40px;
+  grid-template-columns: repeat(4, 64px);
+  column-gap: 24px;
   justify-items: center;
 }
 
 .actions > .key,
+.key-sleep .key,
 .key-power,
 .key-home,
 .key-theme {
@@ -184,8 +185,25 @@ main {
 }
 
 .key-keyboard[aria-pressed='true'],
+.key-sleep .key[aria-pressed='true'],
 .key-power[aria-pressed='true'] {
   background: var(--glass-pressed);
+}
+
+.key-sleep {
+  position: relative;
+}
+
+/* Invisible over the key: a tap opens the phone's own picker. */
+.key-sleep select {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  font-size: 16px;
+}
+
+.key-sleep .key:disabled {
+  opacity: 0.4;
 }
 
 /* Off screen but focusable: iOS opens no keyboard for display: none, and zooms in on fonts under 16px. */
@@ -230,6 +248,7 @@ main {
   .glass,
   .dpad .key-ok,
   .actions > .key,
+  .key-sleep .key,
   .key-power,
   .key-home,
   .key-theme {

@@ -12,10 +12,13 @@ public struct RemoteResponse: Equatable, Sendable {
     public let text: String?
     /// The theme to save, for an accepted theme request (ADR 0019).
     public let theme: AppTheme?
+    /// The sleep timer to set, in minutes, 0 cancels (ADR 0024).
+    public let sleepMinutes: Int?
 
     init(
         status: Int, headers: [String: String] = [:], body: Data = Data(),
-        button: RemoteButton? = nil, pointer: RemotePointerEvent? = nil, text: String? = nil, theme: AppTheme? = nil
+        button: RemoteButton? = nil, pointer: RemotePointerEvent? = nil, text: String? = nil, theme: AppTheme? = nil,
+        sleepMinutes: Int? = nil
     ) {
         self.status = status
         self.headers = headers
@@ -24,6 +27,7 @@ public struct RemoteResponse: Equatable, Sendable {
         self.pointer = pointer
         self.text = text
         self.theme = theme
+        self.sleepMinutes = sleepMinutes
     }
 
     /// The bytes to send back, keeping the connection open.
@@ -37,7 +41,7 @@ public struct RemoteResponse: Equatable, Sendable {
     }
 }
 
-/// Routes a request of the web remote: the API and the app's static files (ADR 0003, protocol v1, and ADRs 0012, 0016, 0019 and 0020).
+/// Routes a request of the web remote: the API and the app's static files (ADR 0003, protocol v1, and ADRs 0012, 0016, 0019, 0020 and 0024).
 public enum RemoteRoute {
     private static let contentTypes = [
         "html": "text/html; charset=utf-8",
@@ -60,20 +64,39 @@ public enum RemoteRoute {
         let theme: String
     }
 
+    private struct SleepBody: Decodable {
+        let minutes: Int
+    }
+
     private struct State: Encodable {
         let clickSound: Bool
         let power: Bool
+        let sleep: Int?
         let theme: String
+
+        private enum CodingKeys: CodingKey {
+            case clickSound, power, sleep, theme
+        }
+
+        /// Keeps `"sleep":null` in the JSON, which the synthesized encoding would drop.
+        func encode(to encoder: Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encode(clickSound, forKey: .clickSound)
+            try container.encode(power, forKey: .power)
+            try container.encode(sleep, forKey: .sleep)
+            try container.encode(theme, forKey: .theme)
+        }
     }
 
     /// Longer texts are rejected: typing on the phone sends a few characters at a time.
     static let maxTextLength = 256
 
     /// `clickSound` is the remote's click sound for the open app (ADR 0015). `theme` is the app's theme, shared with the
-    /// remote (ADR 0019). `power` is whether the app is on (ADR 0021). `staticFile` reads a file of the web app by its
-    /// path relative to the app's folder.
+    /// remote (ADR 0019). `power` is whether the app is on (ADR 0021). `sleep` is the seconds left on the sleep timer
+    /// (ADR 0024). `staticFile` reads a file of the web app by its path relative to the app's folder.
     public static func response(
-        for request: RemoteHTTPRequest, clickSound: Bool, theme: AppTheme, power: Bool, staticFile: (String) -> Data?
+        for request: RemoteHTTPRequest, clickSound: Bool, theme: AppTheme, power: Bool, sleep: Int?,
+        staticFile: (String) -> Data?
     ) -> RemoteResponse {
         if request.path == "/api/press", request.method == "POST" {
             return press(request)
@@ -87,10 +110,13 @@ public enum RemoteRoute {
         if request.path == "/api/theme", request.method == "POST" {
             return self.theme(request)
         }
+        if request.path == "/api/sleep", request.method == "POST" {
+            return self.sleep(request)
+        }
         if request.path == "/api/state", request.method == "GET" {
             let encoder = JSONEncoder()
             encoder.outputFormatting = .sortedKeys
-            let body = (try? encoder.encode(State(clickSound: clickSound, power: power, theme: theme.rawValue))) ?? Data()
+            let body = (try? encoder.encode(State(clickSound: clickSound, power: power, sleep: sleep, theme: theme.rawValue))) ?? Data()
             return RemoteResponse(status: 200, headers: ["Content-Type": "application/json"], body: body)
         }
         guard request.method == "GET", !request.path.hasPrefix("/api/") else { return RemoteResponse(status: 404) }
@@ -124,5 +150,11 @@ public enum RemoteRoute {
         guard let body = try? JSONDecoder().decode(ThemeBody.self, from: request.body),
               let theme = AppTheme(rawValue: body.theme) else { return RemoteResponse(status: 400) }
         return RemoteResponse(status: 204, theme: theme)
+    }
+
+    private static func sleep(_ request: RemoteHTTPRequest) -> RemoteResponse {
+        guard let minutes = try? JSONDecoder().decode(SleepBody.self, from: request.body).minutes,
+              minutes == 0 || SleepTimer.options.contains(minutes) else { return RemoteResponse(status: 400) }
+        return RemoteResponse(status: 204, sleepMinutes: minutes)
     }
 }

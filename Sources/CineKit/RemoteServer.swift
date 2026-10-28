@@ -17,6 +17,7 @@ final class RemoteServer {
 
     static let port = 8686
     private static let themeKey = "appTheme"
+    private static let lockOnSleepKey = "lockOnSleep"
     private static let maxRequestSize = 64 * 1024
     private static let logger = Logger(subsystem: "dev.guilhermemendes.CineKit", category: "RemoteServer")
 
@@ -35,6 +36,8 @@ final class RemoteServer {
     private(set) var state = State.running
     /// The open app's click sound setting, for `GET /api/state` (ADR 0015).
     var clickSound = true
+    private var sleepTimer = SleepTimer()
+    @ObservationIgnored private var sleepTask: Task<Void, Never>?
     @ObservationIgnored private var listener: NWListener?
 
     /// Nil when the Mac has no Bonjour name.
@@ -96,7 +99,9 @@ final class RemoteServer {
     private func respond(to request: RemoteHTTPRequest) -> RemoteResponse {
         let folder = Bundle.main.resourceURL?.appending(path: "remote")
         let theme = AppTheme(rawValue: UserDefaults.standard.string(forKey: Self.themeKey) ?? "") ?? .dark
-        let response = RemoteRoute.response(for: request, clickSound: clickSound, theme: theme, power: AppPower.isOn) { path in
+        let response = RemoteRoute.response(
+            for: request, clickSound: clickSound, theme: theme, power: AppPower.isOn, sleep: sleepTimer.remaining(at: .now)
+        ) { path in
             folder.flatMap { try? Data(contentsOf: $0.appending(path: path)) }
         }
         if response.status == 400 {
@@ -106,7 +111,27 @@ final class RemoteServer {
         if let pointer = response.pointer { SyntheticPointer.perform(pointer) }
         if let text = response.text { type(text) }
         if let theme = response.theme { UserDefaults.standard.set(theme.rawValue, forKey: Self.themeKey) }
+        if let minutes = response.sleepMinutes { setSleep(minutes) }
         return response
+    }
+
+    /// Turns the app off when the timer runs out, then locks the Mac if the setting is on (ADR 0024).
+    private func setSleep(_ minutes: Int) {
+        sleepTask?.cancel()
+        sleepTimer.start(minutes: minutes, now: .now)
+        guard let deadline = sleepTimer.deadline else { return }
+        sleepTask = Task {
+            try? await Task.sleep(for: .seconds(deadline.timeIntervalSinceNow))
+            guard !Task.isCancelled else { return }
+            sleepTimer.cancel()
+            AppPower.turnOff { press(.home) }
+            guard UserDefaults.standard.bool(forKey: Self.lockOnSleepKey) else { return }
+            // Locking during the full screen exit would cut the animation short; give up waiting after 3 s.
+            for _ in 0..<12 where !NSApp.isHidden {
+                try? await Task.sleep(for: .milliseconds(250))
+            }
+            ScreenLock.lock()
+        }
     }
 
     private func press(_ button: RemoteButton) {
@@ -114,7 +139,9 @@ final class RemoteServer {
         case .volumeUp: SystemVolume.adjust(.up)
         case .volumeDown: SystemVolume.adjust(.down)
         case .mute: SystemVolume.toggleMute()
-        case .power: AppPower.toggle { press(.home) }
+        case .power:
+            if AppPower.isOn { setSleep(0) }
+            AppPower.toggle { press(.home) }
         default:
             for keystroke in RemoteKeyMap.keystrokes(for: button) {
                 post(keystroke)

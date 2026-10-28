@@ -48,3 +48,4 @@ O objetivo é que qualquer pessoa — ou agente de IA — entenda **por que** o 
 | [0021](0021-abrir-no-login-e-botao-de-ligar.md) | Abrir no login e botão de ligar no controle | Proposto | 2026-10-23 |
 | [0022](0022-cpu-e-memoria-do-emulador-configuraveis.md) | Núcleos e memória do emulador configuráveis | Proposto | 2026-10-25 |
 | [0023](0023-flixbypass-embutido-no-netflix.md) | FlixBypass embutido no Netflix | Proposto | 2026-10-25 |
+| [0024](0024-timer-de-desligar.md) | Timer de desligar pelo controle | Proposto | 2026-10-28 |

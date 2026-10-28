@@ -33,13 +33,18 @@ export function setTheme(theme: Theme, options: Options = {}): Promise<PressResu
   return post('/api/theme', { theme }, options)
 }
 
+/** Turns the Mac off in `minutes`; 0 cancels the timer (ADR 0024). */
+export function setSleep(minutes: number, options: Options = {}): Promise<PressResult> {
+  return post('/api/sleep', { minutes }, options)
+}
+
 /**
- * Reads the Mac's state for the remote: whether the open app wants the click sound (ADR 0015), the theme (ADR 0019)
- * and whether the app is on (ADR 0021).
+ * Reads the Mac's state for the remote: whether the open app wants the click sound (ADR 0015), the theme (ADR 0019),
+ * whether the app is on (ADR 0021) and the seconds left on the sleep timer (ADR 0024).
  */
 export async function fetchState(
   { fetch = globalThis.fetch }: Options = {},
-): Promise<{ clickSound: boolean; theme: Theme; power: boolean } | 'offline'> {
+): Promise<{ clickSound: boolean; theme: Theme; power: boolean; sleep: number | null } | 'offline'> {
   try {
     const response = await fetch('/api/state', { signal: AbortSignal.timeout(timeoutMs) })
     if (response.ok) {
@@ -48,6 +53,7 @@ export async function fetchState(
         clickSound: json.clickSound === true,
         theme: json.theme === 'light' ? 'light' : 'dark',
         power: json.power === true,
+        sleep: typeof json.sleep === 'number' ? json.sleep : null,
       }
     }
     return 'offline'

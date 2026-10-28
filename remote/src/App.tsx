@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { fetchState, pointer, press, setTheme, typeText, type Button, type PressResult } from './api'
+import { fetchState, pointer, press, setSleep, setTheme, typeText, type Button, type PressResult } from './api'
 import { createClickSound } from './clickSound'
 import { haptic } from './haptics'
 import { startHold } from './holdRepeat'
@@ -23,6 +23,7 @@ export default function App() {
   const [offline, setOffline] = useState(false)
   const [theme, setThemeState] = useState(() => loadTheme(localStorage))
   const [power, setPower] = useState(false)
+  const [sleep, setSleepState] = useState<number | null>(null)
 
   // The Mac's theme (ADR 0019).
   useEffect(() => {
@@ -51,8 +52,14 @@ export default function App() {
     await send('power')
   }
 
-  // The open app may turn the click sound off (ADR 0015), the Mac sets the theme (ADR 0019) and says whether it is on
-  // (ADR 0021); offline keeps the last values.
+  // Optimistic like the theme; the Mac keeps the timer and the next /api/state brings the seconds left (ADR 0024).
+  async function chooseSleep(minutes: number) {
+    setSleepState(minutes * 60 || null)
+    handleResult(await setSleep(minutes))
+  }
+
+  // The open app may turn the click sound off (ADR 0015), the Mac sets the theme (ADR 0019), says whether it is on
+  // (ADR 0021) and how long the sleep timer has left (ADR 0024); offline keeps the last values.
   useEffect(() => {
     async function refresh() {
       if (document.visibilityState !== 'visible') return
@@ -61,6 +68,7 @@ export default function App() {
         clickSound.enabled = state.clickSound
         setThemeState(state.theme)
         setPower(state.power)
+        setSleepState(state.sleep)
       }
     }
     void refresh()
@@ -101,6 +109,7 @@ export default function App() {
         <div className="actions">
           <Key button="back" label="Voltar" onPress={send}><BackIcon /></Key>
           <KeyboardKey queue={textQueue} onPress={send} />
+          <SleepKey remaining={sleep} disabled={!power} onChoose={(minutes) => void chooseSleep(minutes)} />
           <Key button="playPause" label="Pause" onPress={send}><PlayPauseIcon /></Key>
         </div>
       </div>
@@ -236,6 +245,35 @@ function KeyboardKey({ queue, onPress }: { queue: TextQueue; onPress: (button: B
   )
 }
 
+/** The TV's sleep button: the phone's own picker, over a key that shows the minutes left while the timer runs (ADR 0024). */
+function SleepKey({ remaining, disabled, onChoose }: {
+  remaining: number | null
+  disabled: boolean
+  onChoose: (minutes: number) => void
+}) {
+  return (
+    <div className="key-sleep">
+      <button type="button" className="key" tabIndex={-1} aria-label="Timer de desligar" aria-pressed={remaining !== null} disabled={disabled}>
+        {remaining === null ? <MoonIcon /> : Math.ceil(remaining / 60)}
+      </button>
+      <select
+        aria-label="Desligar em"
+        disabled={disabled}
+        // Always back on the placeholder, so choosing the same time again still fires a change.
+        value=""
+        onChange={(event) => {
+          feedback()
+          onChoose(Number(event.target.value))
+        }}
+      >
+        <option value="" disabled hidden>Desligar em</option>
+        {remaining !== null && <option value="0">Desativar</option>}
+        {[15, 30, 45, 60, 90, 120].map((minutes) => <option key={minutes} value={minutes}>{minutes} min</option>)}
+      </select>
+    </div>
+  )
+}
+
 // Icons drawn after SF Symbols, in the text color.
 function Icon({ children, rotate = 0 }: { children: ReactNode; rotate?: number }) {
   return (
@@ -276,6 +314,10 @@ function KeyboardIcon() {
       <path d="M6.5 10h.01M10 10h.01M14 10h.01M17.5 10h.01M8 14h8" />
     </Icon>
   )
+}
+
+function MoonIcon() {
+  return <Icon><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z" /></Icon>
 }
 
 function PlayPauseIcon() {

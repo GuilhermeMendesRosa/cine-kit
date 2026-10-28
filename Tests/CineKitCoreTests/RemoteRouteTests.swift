@@ -9,10 +9,10 @@ struct RemoteRouteTests {
     ]
 
     private func respond(
-        _ raw: String, clickSound: Bool = true, theme: AppTheme = .dark, power: Bool = false
+        _ raw: String, clickSound: Bool = true, theme: AppTheme = .dark, power: Bool = false, sleep: Int? = nil
     ) throws -> RemoteResponse {
         let request = try #require(RemoteHTTPRequest.parse(Data(raw.utf8)))
-        return RemoteRoute.response(for: request, clickSound: clickSound, theme: theme, power: power) { files[$0] }
+        return RemoteRoute.response(for: request, clickSound: clickSound, theme: theme, power: power, sleep: sleep) { files[$0] }
     }
 
     private func press(_ body: String) throws -> RemoteResponse {
@@ -29,6 +29,10 @@ struct RemoteRouteTests {
 
     private func themeRequest(_ body: String) throws -> RemoteResponse {
         try respond("POST /api/theme HTTP/1.1\r\nContent-Length: \(body.utf8.count)\r\n\r\n\(body)")
+    }
+
+    private func sleepRequest(_ body: String) throws -> RemoteResponse {
+        try respond("POST /api/sleep HTTP/1.1\r\nContent-Length: \(body.utf8.count)\r\n\r\n\(body)")
     }
 
     @Test func rootServesIndex() throws {
@@ -77,7 +81,7 @@ struct RemoteRouteTests {
     @Test func rejectsPathTraversal() throws {
         let request = try #require(RemoteHTTPRequest.parse(Data("GET /../secret.txt HTTP/1.1\r\n\r\n".utf8)))
         var asked = false
-        let response = RemoteRoute.response(for: request, clickSound: true, theme: .dark, power: false) { _ in
+        let response = RemoteRoute.response(for: request, clickSound: true, theme: .dark, power: false, sleep: nil) { _ in
             asked = true
             return Data()
         }
@@ -96,7 +100,7 @@ struct RemoteRouteTests {
         let response = try respond("GET /api/state HTTP/1.1\r\n\r\n", clickSound: false)
         #expect(response.status == 200)
         #expect(response.headers["Content-Type"] == "application/json")
-        #expect(response.body == Data(#"{"clickSound":false,"power":false,"theme":"dark"}"#.utf8))
+        #expect(response.body == Data(#"{"clickSound":false,"power":false,"sleep":null,"theme":"dark"}"#.utf8))
     }
 
     @Test func stateReturnsTheme() throws {
@@ -122,10 +126,41 @@ struct RemoteRouteTests {
         #expect(try themeRequest("dark").status == 400)
     }
 
+    @Test func sleepWithValidMinutesIsAccepted() throws {
+        let response = try sleepRequest(#"{"minutes":30}"#)
+        #expect(response.status == 204)
+        #expect(response.sleepMinutes == 30)
+    }
+
+    @Test func sleepZeroCancels() throws {
+        let response = try sleepRequest(#"{"minutes":0}"#)
+        #expect(response.status == 204)
+        #expect(response.sleepMinutes == 0)
+    }
+
+    @Test func sleepWithInvalidMinutesIs400() throws {
+        for body in [#"{"minutes":20}"#, #"{"minutes":-5}"#, #"{"minutes":"30"}"#, "{}"] {
+            let response = try sleepRequest(body)
+            #expect(response.status == 400)
+            #expect(response.sleepMinutes == nil)
+        }
+    }
+
+    @Test func getSleepIs404() throws {
+        #expect(try respond("GET /api/sleep HTTP/1.1\r\n\r\n").status == 404)
+    }
+
+    @Test func stateIncludesSleep() throws {
+        let running = try respond("GET /api/state HTTP/1.1\r\n\r\n", sleep: 1740)
+        #expect(String(decoding: running.body, as: UTF8.self).contains(#""sleep":1740"#))
+        let idle = try respond("GET /api/state HTTP/1.1\r\n\r\n")
+        #expect(String(decoding: idle.body, as: UTF8.self).contains(#""sleep":null"#))
+    }
+
     @Test func stateWithoutAuthorizationIsServed() throws {
         let response = try respond("GET /api/state HTTP/1.1\r\n\r\n")
         #expect(response.status == 200)
-        #expect(response.body == Data(#"{"clickSound":true,"power":false,"theme":"dark"}"#.utf8))
+        #expect(response.body == Data(#"{"clickSound":true,"power":false,"sleep":null,"theme":"dark"}"#.utf8))
     }
 
     @Test func pointerClickReturns204() throws {
