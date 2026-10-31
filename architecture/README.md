@@ -49,3 +49,4 @@ O objetivo é que qualquer pessoa — ou agente de IA — entenda **por que** o 
 | [0022](0022-cpu-e-memoria-do-emulador-configuraveis.md) | Núcleos e memória do emulador configuráveis | Proposto | 2026-10-25 |
 | [0023](0023-flixbypass-embutido-no-netflix.md) | FlixBypass embutido no Netflix | Proposto | 2026-10-25 |
 | [0024](0024-timer-de-desligar.md) | Timer de desligar pelo controle | Proposto | 2026-10-28 |
+| [0025](0025-backspace-do-teclado-com-sentinela.md) | Backspace do teclado do controle com sentinela | Proposto | 2026-10-31 |

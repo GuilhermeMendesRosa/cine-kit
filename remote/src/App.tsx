@@ -3,6 +3,7 @@ import { fetchState, pointer, press, setSleep, setTheme, typeText, type Button, 
 import { createClickSound } from './clickSound'
 import { haptic } from './haptics'
 import { startHold } from './holdRepeat'
+import { readField, sentinel } from './keyboardField'
 import { createPointerQueue } from './pointerQueue'
 import { createTextQueue, type TextQueue } from './textQueue'
 import { applyTheme, loadTheme, saveTheme } from './theme'
@@ -173,18 +174,14 @@ function KeyboardKey({ queue, onPress }: { queue: TextQueue; onPress: (button: B
   useEffect(() => {
     const field = input.current!
 
-    // Text leaves right away and the field stays empty, so the phone has nothing to autocorrect.
-    function flush() {
-      if (field.value === '') return
-      queue.type(field.value)
-      field.value = ''
-    }
+    field.value = sentinel
 
-    function beforeInput(event: InputEvent) {
-      if (event.inputType === 'deleteContentBackward' && field.value === '') {
-        event.preventDefault()
-        onPress('delete')
-      }
+    // Text leaves right away and only the sentinel stays, so the phone has nothing to autocorrect.
+    function flush() {
+      const { text, deleted } = readField(field.value)
+      if (text !== '') queue.type(text)
+      else if (deleted) onPress('delete')
+      field.value = sentinel
     }
 
     function typed(event: Event) {
@@ -199,12 +196,10 @@ function KeyboardKey({ queue, onPress }: { queue: TextQueue; onPress: (button: B
       field.blur()
     }
 
-    field.addEventListener('beforeinput', beforeInput)
     field.addEventListener('input', typed)
     field.addEventListener('compositionend', flush)
     field.addEventListener('keydown', keyDown)
     return () => {
-      field.removeEventListener('beforeinput', beforeInput)
       field.removeEventListener('input', typed)
       field.removeEventListener('compositionend', flush)
       field.removeEventListener('keydown', keyDown)
@@ -238,7 +233,10 @@ function KeyboardKey({ queue, onPress }: { queue: TextQueue; onPress: (button: B
         autoCapitalize="off"
         spellCheck={false}
         enterKeyHint="send"
-        onFocus={() => setOpen(true)}
+        onFocus={() => {
+          input.current!.value = sentinel
+          setOpen(true)
+        }}
         onBlur={() => setOpen(false)}
       />
     </>
