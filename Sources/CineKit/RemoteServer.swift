@@ -59,7 +59,10 @@ final class RemoteServer {
 
     func start() {
         do {
-            let listener = try NWListener(using: .tcp, on: NWEndpoint.Port(rawValue: UInt16(Self.port))!)
+            // Each touchpad event waits for its response, so the small responses must not wait on Nagle's algorithm.
+            let tcp = NWProtocolTCP.Options()
+            tcp.noDelay = true
+            let listener = try NWListener(using: NWParameters(tls: nil, tcp: tcp), on: NWEndpoint.Port(rawValue: UInt16(Self.port))!)
             listener.stateUpdateHandler = { [weak self] state in
                 guard case .failed(let error) = state else { return }
                 MainActor.assumeIsolated { self?.state = .failed(error.localizedDescription) }

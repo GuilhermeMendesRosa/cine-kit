@@ -6,6 +6,8 @@ import CineKitCore
 /// remote's touchpad continue from the same point.
 @MainActor
 enum SyntheticPointer {
+    private static var scrollCarry = ScrollCarry()
+
     static func perform(_ event: RemotePointerEvent) {
         switch event {
         case .move(let dx, let dy):
@@ -49,9 +51,12 @@ enum SyntheticPointer {
     /// Pixel deltas that the content follows, as with natural scrolling.
     private static func scroll(dx: Double, dy: Double) {
         let point = NSEvent.mouseLocation
-        guard let window = window(at: point),
+        // The event only holds whole pixels; the fractions add up for the next one instead of being lost.
+        let pixels = scrollCarry.add(dx: dx, dy: dy)
+        guard pixels.dx != 0 || pixels.dy != 0,
+              let window = window(at: point),
               let cgEvent = CGEvent(
-                  scrollWheelEvent2Source: nil, units: .pixel, wheelCount: 2, wheel1: Int32(dy), wheel2: Int32(dx), wheel3: 0
+                  scrollWheelEvent2Source: nil, units: .pixel, wheelCount: 2, wheel1: pixels.dy, wheel2: pixels.dx, wheel3: 0
               ) else { return }
         // An NSEvent made from a CGEvent has no window: its location in the window is the CGEvent's location
         // converted as if it were on the screen, and only sending it to the window directly reaches the view.
