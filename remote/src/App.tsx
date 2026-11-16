@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { fetchState, pointer, press, setSleep, setTheme, typeText, type Button, type PressResult } from './api'
 import { createClickSound } from './clickSound'
 import { haptic } from './haptics'
@@ -36,9 +36,10 @@ export default function App() {
     setOffline(result === 'offline')
   }
 
-  async function send(button: Button) {
-    handleResult(await press(button))
-  }
+  // Stable, so a render (every /api/state while the sleep timer runs) does not reset the keyboard field mid-word.
+  const send = useCallback(async (button: Button) => {
+    setOffline(await press(button) === 'offline')
+  }, [])
 
   // Optimistic: the phone switches at once; offline, the next /api/state brings back the Mac's theme.
   async function toggleTheme() {
