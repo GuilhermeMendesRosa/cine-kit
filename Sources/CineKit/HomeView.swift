@@ -69,7 +69,8 @@ struct HomeView: View {
                 onOpenSettings()
                 return .handled
             }
-            onOpen(apps[index])
+            // The shelf may be empty, or shorter than when the card took the focus.
+            if apps.indices.contains(index) { onOpen(apps[index]) }
             return .handled
         }
     }
