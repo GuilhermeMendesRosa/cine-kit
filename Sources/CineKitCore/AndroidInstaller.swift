@@ -111,7 +111,19 @@ public final class AndroidInstaller {
         _ = try await runner.run(URL(filePath: "/usr/bin/unzip"), ["-q", file.path(percentEncoded: false), "-d", staging.path(percentEncoded: false)])
         let contents = try fileManager.contentsOfDirectory(atPath: staging.path(percentEncoded: false)).filter { $0 != "__MACOSX" }
         guard contents.count == 1, let folder = contents.first else { throw AndroidInstallerError.unexpectedArchive(package.name) }
-        try fileManager.moveItem(at: staging.appending(path: folder), to: target)
+        let extracted = staging.appending(path: folder)
+        // Reading the 8.6 GB system image would stall the main actor.
+        await Task.detached { Self.compactImages(in: extracted) }.value
+        try fileManager.moveItem(at: extracted, to: target)
+    }
+
+    /// unzip writes every zero of a disk image to disk; the system image is mostly zeros.
+    private nonisolated static func compactImages(in folder: URL) {
+        let files = FileManager.default.enumerator(at: folder, includingPropertiesForKeys: nil)?.compactMap { $0 as? URL } ?? []
+        for image in files where image.pathExtension == "img" {
+            // Only saves disk: a volume that cannot punch holes keeps the image as extracted.
+            try? SparseFile.compact(image)
+        }
     }
 
     private func writeAVD() throws {
