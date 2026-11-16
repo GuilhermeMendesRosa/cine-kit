@@ -19,6 +19,7 @@ struct AndroidScreen: View {
     @State private var frames: EmulatorFrameSource?
     @State private var client: ScrcpyClient?
     @State private var keyMonitor: Any?
+    @State private var escapeWasHeld = false
     @AppStorage("androidResolution") private var resolution = AndroidRuntime.Resolution.hd1080
     @AppStorage("androidCores") private var cores = AndroidRuntime.Hardware.defaultCores
     @AppStorage("androidMemory") private var memoryMB = AndroidRuntime.Hardware.defaultMemoryMB
@@ -125,7 +126,11 @@ struct AndroidScreen: View {
             return
         }
         if event.type == .keyDown {
+            escapeWasHeld = event.isARepeat
             if event.isARepeat { onExit() }
+        } else if escapeWasHeld {
+            // The release of a held Esc already went home; it is not a Back as well.
+            escapeWasHeld = false
         } else {
             client.send(.injectKeycode(action: .down, keycode: Self.backKeycode))
             client.send(.injectKeycode(action: .up, keycode: Self.backKeycode))

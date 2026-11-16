@@ -89,6 +89,7 @@ private final class FocusingWebView: WKWebView {
     var onExit: () -> Void = {}
     var handlesBack = false
     private var escapeMonitor: Any?
+    private var escapeWasHeld = false
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
@@ -108,7 +109,13 @@ private final class FocusingWebView: WKWebView {
     /// Esc is Back on release; holding it (first auto-repeat) goes home from anywhere (ADR 0012).
     private func handleEscape(_ event: NSEvent) {
         if event.type == .keyDown {
+            escapeWasHeld = event.isARepeat
             if event.isARepeat { leave() }
+            return
+        }
+        // The release of a held Esc already went home; it is not a Back as well.
+        guard !escapeWasHeld else {
+            escapeWasHeld = false
             return
         }
         switch WebBack.action(isFullscreen: fullscreenState == .inFullscreen, handlesBack: handlesBack, canGoBack: canGoBack) {
