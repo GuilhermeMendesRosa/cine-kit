@@ -25,7 +25,7 @@ public struct RemoteHTTPRequest: Equatable, Sendable {
 
         let length = headers["content-length"].flatMap(Int.init) ?? 0
         let bodyStart = headEnd.upperBound
-        guard data.distance(from: bodyStart, to: data.endIndex) >= length else { return nil }
+        guard length >= 0, data.distance(from: bodyStart, to: data.endIndex) >= length else { return nil }
 
         var query: [String: String] = [:]
         for item in components.queryItems ?? [] {

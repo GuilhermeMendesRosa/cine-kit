@@ -23,6 +23,10 @@ struct RemoteHTTPRequestTests {
         #expect(RemoteHTTPRequest.parse(Data("POST /api/press HTTP/1.1\r\nContent-Length: 20\r\n\r\n{\"button\"".utf8)) == nil)
     }
 
+    @Test func negativeContentLengthReturnsNil() {
+        #expect(RemoteHTTPRequest.parse(Data("POST /api/press HTTP/1.1\r\nContent-Length: -1\r\n\r\n{}".utf8)) == nil)
+    }
+
     @Test func lowercasesHeaderNames() throws {
         let request = try #require(RemoteHTTPRequest.parse(Data("GET / HTTP/1.1\r\nAuthorization: Bearer abc\r\n\r\n".utf8)))
         #expect(request.headers["authorization"] == "Bearer abc")
